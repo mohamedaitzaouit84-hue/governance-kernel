@@ -87,3 +87,34 @@ TEST 5 حاول استدعاءً جديداً على نفس الفرع.
 - Migration بين الأجهزة.
 
 داخل نطاق V0.2/V0.3، ليست عيوباً في V0.1.
+
+## الجلسة 8: الرفع على GitHub
+
+### الخطأ #5: رمز GitHub بصلاحيات كاملة (حادثة أمنية)
+
+السياق: عند استخدام gh auth login، الرمز الذي أُنشئ منح
+صلاحيات كاملة تقريباً:
+admin:enterprise, admin:gpg_key, admin:org, admin:org_hook,
+admin:public_key, admin:repo_hook, admin:ssh_signing_key,
+audit_log, codespace, copilot, delete_repo, delete:packages,
+gist, notifications, project, repo, user, workflow,
+write:discussion, write:network_configurations, write:packages.
+
+هذا ينتهك مبدأ Least Privilege الذي نصّ عليه الميثاق.
+
+الأثر: أي شخص يحصل على هذا الرمز يستطيع حذف كل المستودعات،
+حذف الحساب، تغيير كلمة المرور، والوصول لكل شيء.
+
+التصحيح:
+1. حذف الرموز المكشوفة فوراً.
+2. إنشاء رمز بصلاحيات محددة فقط.
+3. التحقق من الصلاحيات قبل الاستخدام:
+   - gh auth status | grep "Token scopes"
+
+الصلاحيات الصحيحة: 'read:org', 'repo', 'workflow' فقط.
+
+الدرس: Least Privilege يُطبَّق على المالك أيضاً، لا فقط على
+الوكلاء. الأمان الذي نبنيه في النظام يجب أن يُطبَّق علينا أولاً.
+
+الدرس الأعمق: أي رمز يُنشر في محادثة أو يُصوَّر = محروق.
+يجب إلغاؤه فوراً، ليس "التأكد أولاً".
