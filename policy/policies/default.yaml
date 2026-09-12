@@ -1,0 +1,34 @@
+version: "0.1.0"
+default_decision: deny
+
+roles:
+  owner:
+    trust_min: 1.0
+    permissions: ["*"]
+  system:
+    trust_min: 0.8
+    permissions:
+      - "audit:read"
+      - "audit:write"
+      - "policy:read"
+  agent_high:
+    trust_min: 0.7
+    permissions:
+      - "tool:python"
+      - "tool:file_read"
+      - "memory:read"
+      - "memory:write"
+  agent_mid:
+    trust_min: 0.5
+    permissions:
+      - "tool:file_read"
+      - "memory:read"
+  agent_low:
+    trust_min: 0.0
+    permissions:
+      - "memory:read"
+
+limits:
+  tool_calls_per_minute: 60
+  memory_ops_per_minute: 300
+  spawn_requires_owner: true

@@ -1,0 +1,27 @@
+# المفاتيح الخاصة — لا تُرفع أبداً
+identity/owner_key.priv
+identity/root_state.json
+
+# السجلات المحلية
+logs/*.jsonl
+logs/*.json
+
+# الحالة المحلية
+control/kill.flag
+control/resource_state.json
+
+# سجل الفروع المحلي
+branches/registry.jsonl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Termux / محررات
+.termux/
+*.swp
+*~
+.DS_Store
