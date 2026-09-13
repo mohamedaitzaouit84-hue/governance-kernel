@@ -1,4 +1,4 @@
-version: "0.1.0"
+version: "0.2.0"
 default_decision: deny
 
 roles:
@@ -11,6 +11,7 @@ roles:
       - "audit:read"
       - "audit:write"
       - "policy:read"
+      - "memory:read"
   agent_high:
     trust_min: 0.7
     permissions:
@@ -18,11 +19,15 @@ roles:
       - "tool:file_read"
       - "memory:read"
       - "memory:write"
+      - "memory:graph_traverse"
+      - "memory:trail_reinforce"
+      - "memory:swarm_query"
   agent_mid:
     trust_min: 0.5
     permissions:
       - "tool:file_read"
       - "memory:read"
+      - "memory:graph_traverse"
   agent_low:
     trust_min: 0.0
     permissions:
@@ -31,4 +36,12 @@ roles:
 limits:
   tool_calls_per_minute: 60
   memory_ops_per_minute: 300
+  graph_traversals_per_minute: 60
+  swarm_queries_per_minute: 30
   spawn_requires_owner: true
+
+memory_limits:
+  max_nodes: 100
+  max_edges: 500
+  max_trails: 1000
+  max_events: 10000

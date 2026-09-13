@@ -130,3 +130,15 @@
 | تشفير السجل | مؤجل | V0.4 |
 | TPM/HSM | مؤجل | V0.5 |
 | Distributed trust | مؤجل | V0.5+ |
+
+## D-023: الدور الافتراضي لبوابة الذاكرة
+
+التاريخ: 2026-09-13
+القرار: فرع الذاكرة يعمل بدور agent_high، لا system.
+
+السبب: في FREEZE_v0.2، memory:write و memory:graph_traverse
+محصورة في agent_high. دور system له audit/policy فقط.
+البوابة الافتراضية كانت system، مما رفض write.
+التصحيح: gate.py يستخدم agent_high كافتراضي.
+
+الثمن: الذاكرة كوحدة داخلية عالية الثقة، لا منخفضة.

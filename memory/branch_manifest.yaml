@@ -1,0 +1,50 @@
+version: "0.2.0"
+branch_name: memory
+branch_kind: storage
+purpose: >
+  Living Memory Layer — Episodic, Semantic, Procedural, Meta.
+  يحفظ الأحداث، يبني شبكة المفاهيم، يعلّم المسارات،
+  ويستعيد عبر سرب من المستقبِلات. محكوم ببوابة memory/gate.py.
+
+requested_permissions:
+  - memory:read
+  - memory:write
+  - memory:graph_traverse
+  - memory:trail_reinforce
+  - memory:swarm_query
+
+components:
+  episodic:
+    - event_log.py
+    - event_index.py
+  semantic:
+    - node.py
+    - edge.py
+    - graph.py
+    - traversal.py
+  procedural:
+    - trail.py
+    - reinforcement.py
+    - decay.py
+  meta:
+    - swarm.py
+    - retriever.py
+    - consensus.py
+  dynamics:
+    - weights.py
+    - bounds.py
+
+limits:
+  max_nodes: 100
+  max_edges: 500
+  max_trails: 1000
+  max_events: 10000
+
+entry_point: memory/gate.py
+
+principles:
+  - كل استدعاء يمر عبر gate.py
+  - gate.py يستدعي governed_action.execute
+  - كل عملية تُسجَّل في audit.jsonl
+  - لا استدعاء مباشر بين memory والفروع الأخرى
+  - الحدود القصوى غير قابلة للتجاوز
