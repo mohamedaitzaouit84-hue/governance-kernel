@@ -28,3 +28,6 @@ __pycache__/
 
 # بيانات الذاكرة (محلية، لا تُرفع)
 memory/data/
+
+# Python cache
+**/__pycache__/
