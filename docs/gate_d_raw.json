@@ -1,0 +1,137 @@
+[
+  {
+    "size": 10,
+    "nodes": 10,
+    "edges": 9,
+    "add_node": {
+      "mean_ms": 4.343,
+      "median_ms": 3.053,
+      "max_ms": 15.855,
+      "total_ms": 43.426
+    },
+    "add_edge": {
+      "mean_ms": 6.139,
+      "median_ms": 5.203,
+      "max_ms": 14.022,
+      "total_ms": 55.25
+    },
+    "traverse": {
+      "BFS": {
+        "ms": 7.926,
+        "visited": 10
+      },
+      "DFS": {
+        "ms": 7.645,
+        "visited": 10
+      },
+      "BY_WEIGHT": {
+        "ms": 8.284,
+        "visited": 10
+      },
+      "BY_RECENCY": {
+        "ms": 8.545,
+        "visited": 10
+      },
+      "BY_IMPORTANCE": {
+        "ms": 9.26,
+        "visited": 10
+      }
+    },
+    "verify": {
+      "ms": 0.55,
+      "ok": true,
+      "nodes": 10,
+      "edges": 9
+    }
+  },
+  {
+    "size": 50,
+    "nodes": 50,
+    "edges": 53,
+    "add_node": {
+      "mean_ms": 13.245,
+      "median_ms": 13.249,
+      "max_ms": 19.107,
+      "total_ms": 662.237
+    },
+    "add_edge": {
+      "mean_ms": 24.278,
+      "median_ms": 24.592,
+      "max_ms": 29.659,
+      "total_ms": 1189.64
+    },
+    "traverse": {
+      "BFS": {
+        "ms": 39.286,
+        "visited": 40
+      },
+      "DFS": {
+        "ms": 38.757,
+        "visited": 27
+      },
+      "BY_WEIGHT": {
+        "ms": 39.21,
+        "visited": 40
+      },
+      "BY_RECENCY": {
+        "ms": 39.666,
+        "visited": 40
+      },
+      "BY_IMPORTANCE": {
+        "ms": 40.116,
+        "visited": 40
+      }
+    },
+    "verify": {
+      "ms": 2.668,
+      "ok": true,
+      "nodes": 50,
+      "edges": 53
+    }
+  },
+  {
+    "size": 100,
+    "nodes": 100,
+    "edges": 108,
+    "add_node": {
+      "mean_ms": 44.341,
+      "median_ms": 43.406,
+      "max_ms": 55.313,
+      "total_ms": 4434.107
+    },
+    "add_edge": {
+      "mean_ms": 65.87,
+      "median_ms": 65.51,
+      "max_ms": 76.519,
+      "total_ms": 6521.114
+    },
+    "traverse": {
+      "BFS": {
+        "ms": 99.156,
+        "visited": 41
+      },
+      "DFS": {
+        "ms": 99.105,
+        "visited": 27
+      },
+      "BY_WEIGHT": {
+        "ms": 99.321,
+        "visited": 41
+      },
+      "BY_RECENCY": {
+        "ms": 99.703,
+        "visited": 41
+      },
+      "BY_IMPORTANCE": {
+        "ms": 101.142,
+        "visited": 41
+      }
+    },
+    "verify": {
+      "ms": 5.363,
+      "ok": true,
+      "nodes": 100,
+      "edges": 108
+    }
+  }
+]

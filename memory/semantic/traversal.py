@@ -103,7 +103,18 @@ def _by_weight(start_id, max_depth):
 
 
 def _by_recency(start_id, max_depth):
-    """الأحدث عقدة أولاً."""
+    """الأحدث عقدة أولاً.
+
+    ملاحظة: نبني جدول created_at مسبقاً لتفادي استدعاء get_node
+    داخل sort (Gate D اكتشف أن ذلك يُبطئ 20x).
+    """
+    # بناء جدول مسبق لكل العقد — O(n)
+    all_nodes = {n["node_id"]: n for n in g._load_nodes()}
+
+    def created_of(nid):
+        node = all_nodes.get(nid)
+        return node.get("created_at", "") if node else ""
+
     visited = {start_id}
     order = [start_id]
     frontier = [(start_id, 0)]
@@ -113,11 +124,7 @@ def _by_recency(start_id, max_depth):
         if depth >= max_depth:
             continue
         nbrs = _out_neighbors(current)
-        # نرتب حسب created_at تنازلياً
-        def created_key(item):
-            node = g.get_node(item[1])
-            return node.get("created_at", "") if node else ""
-        nbrs.sort(key=created_key, reverse=True)
+        nbrs.sort(key=lambda item: created_of(item[1]), reverse=True)
         for _, nbr in nbrs:
             if nbr not in visited:
                 visited.add(nbr)
