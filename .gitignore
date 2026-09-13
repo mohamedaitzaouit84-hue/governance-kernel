@@ -25,3 +25,6 @@ __pycache__/
 *.swp
 *~
 .DS_Store
+
+# بيانات الذاكرة (محلية، لا تُرفع)
+memory/data/
