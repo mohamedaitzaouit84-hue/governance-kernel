@@ -23,6 +23,16 @@ import branch_registry as br
 MEMORY_BRANCH_NAME = "memory"
 _MEMORY_BRANCH_ID = None
 
+# Whitelist — بوابة الذاكرة تقبل فقط هذه الأفعال.
+# أي شيء آخر يُرفض، حتى لو كان الدور يملكه عالمياً.
+ALLOWED_ACTIONS = frozenset({
+    "memory:read",
+    "memory:write",
+    "memory:graph_traverse",
+    "memory:trail_reinforce",
+    "memory:swarm_query",
+})
+
 
 def _resolve_branch_id():
     """يبحث عن branch_id لفرع الذاكرة من السجل."""
@@ -51,6 +61,15 @@ class MemoryGateError(Exception):
 
 def _pre_check(action, resource=None, amount=1, subject=None, role=None, trust=None):
     """فحص قبل التنفيذ — يعيد dict الاستدعاء."""
+    if action not in ALLOWED_ACTIONS:
+        audit.append("memory_gate_denied", {
+            "action": action,
+            "reason": f"not in memory whitelist",
+        })
+        raise MemoryGateError(
+            f"action '{action}' غير مسموح داخل بوابة الذاكرة"
+        )
+
     if kill_switch.is_active():
         audit.append("memory_gate_denied", {
             "action": action,
