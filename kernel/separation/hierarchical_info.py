@@ -14,7 +14,7 @@ class HierarchicalInfoModel(InfoModel):
 
     def gather(self, node, env, clock):
         cluster_id = env.cluster_of.get(self._node_idx(node), 0)
-        local = env.get_cluster_state(cluster_id)
+        local = env.get_cluster_state(cluster_id, clock=clock)
         return InformationSet(local=local)
 
     @staticmethod

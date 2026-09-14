@@ -11,7 +11,7 @@ class DistributedInfoModel(InfoModel):
 
     def gather(self, node, env, clock):
         idx = self._node_idx(node)
-        nbrs = env.get_neighbors(idx)
+        nbrs = env.get_neighbors(idx, clock=clock)
         return InformationSet(neighbors=nbrs)
 
     @staticmethod

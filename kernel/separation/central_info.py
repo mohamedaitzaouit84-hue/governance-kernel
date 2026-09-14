@@ -13,7 +13,7 @@ class CentralInfoModel(InfoModel):
         self.delayed = delayed
 
     def gather(self, node, env, clock):
-        return InformationSet(global_=env.get_global_state(delayed=self.delayed))
+        return InformationSet(global_=env.get_global_state(clock=clock, delayed=self.delayed))
 
     @property
     def name(self):
