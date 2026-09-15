@@ -36,12 +36,12 @@
 | V0.4 (Attacks) | CLOSED | e67ec7f |
 | V0.4.1 (Registry) | fix | 1f26943 |
 | PATTERNS.md | written | 030ce06 |
+| **V0.5 (Agents)** | **✅ CLOSED** | **8cd93d4** |
 
 ### In Progress
-V0.5 — Freeze written. Code NOT started.
+None. V0.5 closed. Next: V0.6 or publish V0.4.
 
 ### Not Started
-- V0.5 agent implementation
 - V0.6 local LLM
 - V0.7 multi-agent + consensus
 - V0.8+ distributed registry, self-evolution
