@@ -2,7 +2,9 @@
 import fnmatch, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "authorization"))
 import policy_store
+import subject_registry
 
 
 class PolicyEngine:
@@ -18,10 +20,20 @@ class PolicyEngine:
         return False
 
     def evaluate(self, request):
-        role_name = request.get("role")
-        trust = float(request.get("trust", 0.0))
+        subject_id = request.get("subject")
         action = request.get("action", "")
         roles = self.policy.get("roles", {})
+
+        # V0.4.1: ignore any role/trust in the request.
+        # Look them up from the trusted registry.
+        entry = subject_registry.lookup(subject_id)
+        if entry is None:
+            return {"allow": False,
+                    "reason": f"unregistered subject: {subject_id}",
+                    "matched": None}
+
+        role_name = entry["role"]
+        trust = entry["trust"]
 
         if role_name not in roles:
             return {"allow": False, "reason": f"unknown role: {role_name}",

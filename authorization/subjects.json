@@ -1,0 +1,25 @@
+{
+  "version": "0.4.1",
+  "subjects": {
+    "owner": {
+      "role": "owner",
+      "trust": 1.0
+    },
+    "system": {
+      "role": "system",
+      "trust": 0.9
+    },
+    "agent_high_1": {
+      "role": "agent_high",
+      "trust": 0.8
+    },
+    "agent_mid_1": {
+      "role": "agent_mid",
+      "trust": 0.6
+    },
+    "agent_low_1": {
+      "role": "agent_low",
+      "trust": 0.3
+    }
+  }
+}
