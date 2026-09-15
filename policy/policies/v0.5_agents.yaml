@@ -1,0 +1,37 @@
+# V0.5 policy extension — layered on top of default.yaml.
+# This file does NOT modify default.yaml. It only adds roles.
+# The base policy remains signed and untouched.
+# See docs/PATTERNS.md P-Q11.
+
+version: "0.5.0"
+extends: "default.yaml"
+default_decision: deny
+
+roles:
+  file_agent:
+    trust_min: 0.0
+    permissions:
+      - "file_read"
+      - "file_list"
+      - "file_write"
+      - "file_delete"
+
+  compute_agent:
+    trust_min: 0.0
+    permissions:
+      - "compute_add"
+      - "compute_sub"
+      - "compute_mul"
+      - "compute_div"
+
+  query_agent:
+    trust_min: 0.0
+    permissions:
+      - "query_lookup"
+      - "query_count"
+      - "query_verify"
+
+limits:
+  file_ops_per_minute: 60
+  compute_ops_per_minute: 120
+  query_ops_per_minute: 120

@@ -460,3 +460,53 @@ subject وrole، لا من ادعاء في الطلب.
 ### Tier C (non-empirical inspiration)
 - Textual sources referenced in Section 3. **Used as inspiration only**.
   No empirical claim is made from these sources.
+
+---
+
+## P-Q11 — Policy Extension (Layered Permissions)
+
+**Category**: Governance
+**Introduced**: V0.5
+**Hypothesis**: H16
+**Inspiration**: Layered law
+  - Canon Law above Scripture (Catholic Church)
+  - Federal law above State law (US)
+  - CustomResourceDefinitions above Core API (Kubernetes)
+
+### Statement
+
+A base policy can be extended by additional policies without
+modifying the base. The extension only adds or overrides roles.
+It never removes. Deny-by-default is preserved in every layer.
+
+### Properties
+
+1. **Retro-compatibility**: every role in base works unchanged
+2. **Deny by default**: inherited from base, applied to all layers
+3. **No conflict**: extension adds, never removes
+4. **Independent signatures**: each layer signed separately
+5. **Trust anchor preserved**: base signature and owner key untouched
+
+### Engineering form
+
+    policy/policies/default.yaml           (V0.4 base, signed)
+    policy/policies/v0.5_agents.yaml       (V0.5 extension, signed)
+    authorization/policy_extension.py      (loader: merges at runtime)
+    authorization/v0.5_gate.py             (gate using merged policy)
+
+The base file is not modified. The merge is in-memory only.
+Result: PolicyEngine receives a dict that is base + extension merged.
+
+### Test (H16)
+
+Adding N new roles via extension does not change the behavior
+of any pre-existing role.
+
+Verification:
+- All V0.1-V0.4 tests still pass
+- All V0.5 tests pass
+- Behavior of agent_low / agent_mid / agent_high unchanged
+
+### Scope
+
+V0.5 and beyond. This is the mechanism for all future policy growth.
