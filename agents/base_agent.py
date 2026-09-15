@@ -19,8 +19,9 @@ _repo = _here.parent
 sys.path.insert(0, str(_repo / "authorization"))
 sys.path.insert(0, str(_repo / "control"))
 sys.path.insert(0, str(_repo / "audit"))
+sys.path.insert(0, str(_repo / "agents"))
 
-import governed_action
+import governed_action_v05 as governed_action
 import kill_switch
 import append_only_log as audit
 
@@ -55,10 +56,13 @@ class BaseAgent:
     TIER_3_CAPABILITIES = []   # unlocked at trust >= 0.60
     INVARIANTS = []
 
-    def __init__(self, branch_id):
+    def __init__(self, branch_id, subject_id=None):
         self.name = self.NAME
         self.role = self.ROLE
         self.branch_id = branch_id
+        # subject_id is the REGISTERED identity (subjects.json).
+        # If None, fall back to NAME (for tests without registration).
+        self.subject_id = subject_id if subject_id else self.NAME
         self.capabilities = list(self.CAPABILITIES)
         self.invariants = list(self.INVARIANTS)
         self.trust = TRUST_INITIAL
@@ -145,7 +149,7 @@ class BaseAgent:
         # 3. Governed execution
         try:
             result = governed_action.execute(
-                subject=self.name,
+                subject=self.subject_id,
                 role=self.role,
                 trust=self.trust,
                 branch_id=self.branch_id,
@@ -171,6 +175,7 @@ class BaseAgent:
             "name": self.name,
             "role": self.role,
             "branch_id": self.branch_id,
+            "subject_id": self.subject_id,
             "trust": round(self.trust, 4),
             "isolated": self.isolated,
             "actions_executed": self.actions_executed,
