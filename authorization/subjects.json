@@ -20,6 +20,18 @@
     "agent_low_1": {
       "role": "agent_low",
       "trust": 0.3
+    },
+    "file_agent_1": {
+      "role": "file_agent",
+      "trust": 0.1
+    },
+    "compute_agent_1": {
+      "role": "compute_agent",
+      "trust": 0.1
+    },
+    "query_agent_1": {
+      "role": "query_agent",
+      "trust": 0.1
     }
   }
 }
