@@ -1,68 +1,182 @@
 # Governance Kernel
 
-نواة حكم تحكم كل ما يُبنى فوقها. V0.1 مكتمل.
+**A zero-dependency governance kernel for AI agents.**
+Built on a single Android phone, with zero budget.
+Six gates closed. 54/54 attacks blocked. PRI = 1.0000.
 
-## الفلسفة
+Author: Ahmed Ait Zaouit (Morocco)
+Repository: https://github.com/mohamedaitzaouit84-hue/governance-kernel
 
-بذرة واحدة. جذر راسخ. جذع يحكم. فروع مسجلة. أوراق مُسجَّلة.
-لا شيء يخرج عن الجذر. لا فرع يعمل دون تسجيل.
+---
 
-## البنية
+## What this is
 
-governance_kernel/
-- CHARTER.md              — الميثاق التأسيسي
-- README.md               — هذا الملف
-- docs/                   — 7 وثائق مرجعية
-- seed/                   — البذرة (Trust Anchor)
-- audit/                  — السجل (hash-chained)
-- policy/                 — السياسات (موقّعة)
-- authorization/          — الصلاحيات
-- control/                — التحكم (Kill Switch, Resources)
-- logs/                   — السجلات المحلية
-- identity/               — مفاتيح المالك (لا تُرفع)
+A working implementation of governance-first architecture:
 
-## التشغيل الأول
+- **Governance before governed.** The kernel exists before the agents.
+- **Freeze before code.** Every version is frozen (docs/FREEZE_vN.md)
+  before a single line of code is written.
+- **Pre-registered thresholds.** Attack success rates are declared
+  before running tests. No post-hoc adjustment.
+- **Failures are logged.** See docs/JOURNEY.md. Nothing is hidden.
+- **Zero external dependencies.** Python standard library only.
 
-cd ~/governance_kernel
-python seed/genesis.py
+Read docs/OPENING.md first — it defines what this project does
+and does NOT claim.
 
-يُشغَّل مرة واحدة فقط. يولّد مفتاح المالك Ed25519.
+---
 
-## اختبار النظام
+## Status
 
-python audit/integrity.py
-python authorization/permission_gate.py
+| Version | Status | Evidence |
+|---------|--------|----------|
+| V0.1 Kernel | CLOSED | d4d776c |
+| V0.2a Memory | CLOSED | 0926b4d |
+| V0.3 Separation | 2/3 gates | 0ad9360 |
+| V0.4 Attacks | CLOSED (PRI = 1.0000) | e67ec7f |
+| **V0.5 Agents** | **CLOSED (5/5 gates)** | 6000b11 |
 
-## المبادئ الملزمة
+Full V0.5 report: docs/GATES_v0.5_report.md
 
-1. مصدر سلطة واحد — كل طلب يمر عبر governed_action.
-2. السجل المرجعي — كل قرار في hash chain.
-3. أقل صلاحية — لا وحدة تُمنح أكثر مما تحتاج.
-4. العزل — لا استدعاء مباشر بين الفروع.
-5. الفشل الآمن — الافتراضي رفض.
-6. الإيقاف الفوري — Kill switch يعمل.
-7. الارتباط بالجذر — كل فرع مرتبط بالبذرة.
-8. الإنبات بالموافقة — لا فرع جديد دون توقيعك.
+---
 
-## بوابات التحقق
+## What it protects against
 
-من V0.2 فصاعداً، كل إصدار يجتاز 10 بوابات:
-Freeze, Sanity, Forensic, RNG, Budget, Grid, Function, Paired, MultTest, Ablation.
-التفاصيل في docs/GATES.md.
+V0.4 attack suite (5 attacks, 54 cases):
 
-## متطلبات التشغيل
+| Attack | Cases | Kernel |
+|--------|-------|--------|
+| a1 prompt injection | 10 | 10/10 |
+| a2 role spoofing | 12 | 12/12 |
+| a3 confused deputy | 12 | 12/12 |
+| a4 token theft | 8 | 8/8 |
+| a5 subagent compromise | 12 | 12/12 |
+| **Aggregate** | **54** | **54/54, PRI = 1.0000** |
 
-- Python 3.10+
-- cryptography
-- pyyaml
+Baselines for comparison:
 
-يعمل بالكامل على الهاتف (Termux).
+| System | Blocked | PRI |
+|--------|---------|-----|
+| Baseline-A (no gate) | 0/54 | 0.0000 |
+| Baseline-B (whitelist) | 41/54 | 0.7593 |
+| **Kernel** | **54/54** | **1.0000** |
 
-## الحالة
+Pre-registered threshold: 0.95. Result: 1.0000. Unchanged.
 
-V0.1 مكتمل ومُختبر. 17/17 اختباراً نجحت.
-V0.2 (الذاكرة الحية) قادم.
+---
 
-## الترخيص
+## Architecture
 
-خاص. جميع الحقوق محفوظة.
+    governance_kernel/
+    ├── CHARTER.md             Founding charter + 10 binding principles
+    ├── LICENSE                AGPL v3 + dual-license notice
+    ├── SECURITY.md            Vulnerability disclosure policy
+    ├── AUTHORS.md             Author identity and links
+    ├── README.md              This file
+    ├── docs/                  20+ reference documents
+    │   ├── OPENING.md         Integrity protocol
+    │   ├── HANDOVER.md        Session transfer protocol
+    │   ├── PATTERNS.md        16 architectural patterns
+    │   ├── GATES.md           Pre-registered gates
+    │   ├── JOURNEY.md         Every error, documented
+    │   ├── PRIOR_ART.md       Honest comparison with existing work
+    │   ├── FREEZE_v0.*.md     Frozen specs per version
+    │   └── GATES_v0.*_report  Gate reports
+    ├── seed/                  Trust anchor (Ed25519)
+    ├── audit/                 Hash-chained append-only log
+    ├── policy/                Signed policy + policy engine
+    ├── authorization/         Gate, registry, branches
+    ├── control/               Kill switch, resource governor
+    ├── memory/                V0.2a episodic + semantic
+    ├── kernel/separation/     V0.3 Info/Policy/Node separation
+    ├── agents/                V0.5 deterministic agents
+    └── tests/
+        ├── gate_v03/          G0.7, G0.9
+        ├── gate_v04/          5 attacks + 2 baselines
+        └── gate_v05/          G0.13 - G0.17
+
+---
+
+## Novel patterns
+
+Documented in docs/PATTERNS.md:
+
+- **P-L1** Dynamic Trust Score
+- **P-Q8** Progressive Capability
+- **P-Q9** Base Invariants
+- **P-Q11** Policy Extension (Layered Permissions)
+  - Inspired by canon law, federalism, Kubernetes CRDs
+  - Base policy signed and untouched. Extensions merged at runtime.
+  - Empirically verified: V0.4 PRI unchanged after V0.5 additions.
+
+---
+
+## Hypotheses tested
+
+| Hyp | Statement | Status |
+|-----|-----------|--------|
+| H1  | Dynamic Trust | Tested (G0.15) |
+| H6  | Single Authority | Tested (V0.2a) |
+| H7  | Dual Verification | Tested (V0.2a) |
+| H8  | Layered Trust | Tested (V0.3) |
+| H9  | Resource Justice | Tested (V0.3) |
+| H10 | Trust as Permission | Tested (V0.3) |
+| H13 | Progressive Capability | Tested (V0.5) |
+| H14 | Base Invariants | Tested (G0.16) |
+| H16 | Policy Extension | Tested (V0.5, V0.4 regression) |
+
+Untested hypotheses are listed in docs/PATTERNS.md.
+
+---
+
+## Quick start
+
+    git clone https://github.com/mohamedaitzaouit84-hue/governance-kernel
+    cd governance_kernel
+
+    # Verify audit chain
+    python audit/integrity.py
+
+    # Run V0.4 attack suite
+    python tests/gate_v04/run_all.py
+
+    # Run V0.5 gate suite
+    python tests/gate_v05/run_all.py
+
+No pip install required. Python 3.9+ standard library only.
+Total runtime: under 30 seconds on a phone.
+
+---
+
+## What this project does NOT claim
+
+See docs/OPENING.md and docs/PRIOR_ART.md for the full list.
+
+- Not the first governance kernel (OPA, Cedar exist).
+- Not production-ready (no external red team).
+- Not formally verified (informal only).
+- Not superior to OPA or Cedar (see PRIOR_ART.md section "Weaker").
+
+---
+
+## License
+
+- **Code**: AGPL v3 (or commercial license on request)
+- **Documentation**: CC BY-SA 4.0
+- **Trademark**: "Governance Kernel" reserved
+
+See LICENSE for details.
+
+---
+
+## Contact
+
+Ahmed Ait Zaouit
+mohamedaitzaouit84-hue@users.noreply.github.com
+Morocco
+
+Built on a phone, at zero cost.
+
+---
+
+*Last updated: 2026-09-15 — V0.5 CLOSED*
