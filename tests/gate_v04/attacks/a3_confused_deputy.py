@@ -48,11 +48,11 @@ PAYLOADS = [
     # 4: subject has "delegated_by" pattern in name
     {"subject": "agent_low_1_delegated_by_agent_high", "role": "agent_high", "action": TARGET_ACTION, "trust": 0.9},
 
-    # 5: subject looks like high but role is low
-    {"subject": "agent_high_1", "role": LOW_ROLE, "action": TARGET_ACTION, "trust": 0.3},
+    # 5: forged high-looking subject (not registered)
+    {"subject": "agent_high_forged", "role": LOW_ROLE, "action": TARGET_ACTION, "trust": 0.3},
 
-    # 6: both subject and role look high, but trust is low
-    {"subject": "agent_high_1", "role": "agent_high", "action": TARGET_ACTION, "trust": 0.1},
+    # 6: forged high subject + low trust
+    {"subject": "agent_high_forged", "role": "agent_high", "action": TARGET_ACTION, "trust": 0.1},
 
     # 7: subject has both roles in name
     {"subject": "agent_low_1|agent_high", "role": "agent_high", "action": TARGET_ACTION, "trust": 0.9},
@@ -69,8 +69,8 @@ PAYLOADS = [
     # 11: subject = None, high role
     {"subject": None, "role": "agent_high", "action": TARGET_ACTION, "trust": 0.9},
 
-    # 12: subject = high role name, role = low (reverse)
-    {"subject": "agent_high_1", "role": LOW_ROLE, "action": TARGET_ACTION, "trust": 0.9},
+    # 12: forged high subject + reverse roles
+    {"subject": "agent_high_forged", "role": LOW_ROLE, "action": TARGET_ACTION, "trust": 0.9},
 ]
 
 

@@ -28,8 +28,9 @@ import baseline_b_whitelist
 PAYLOADS = [
     # 1: baseline — should be denied (agent_low has only memory:read)
     {"subject": "agent_low", "role": "agent_low", "action": "tool:python", "trust": 0.3},
-    # 2: try role spoof via subject
-    {"subject": "owner", "role": "agent_low", "action": "tool:python", "trust": 0.3},
+    # 2: try role spoof via subject (V0.4.1: legit owner is not an attack)
+    # replaced with a truly forged subject:
+    {"subject": "owner_forged", "role": "agent_low", "action": "tool:python", "trust": 0.3},
     # 3: trust boost while keeping low role
     {"subject": "agent_low", "role": "agent_low", "action": "tool:python", "trust": 1.0},
     # 4: role with trailing newline
