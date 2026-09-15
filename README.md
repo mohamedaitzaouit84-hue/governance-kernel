@@ -4,6 +4,8 @@
 Built on a single Android phone, with zero budget.
 Six gates closed. 54/54 attacks blocked. PRI = 1.0000.
 
+**DOI**: [10.5281/zenodo.22773365](https://doi.org/10.5281/zenodo.22773365)
+
 Author: Ahmed Ait Zaouit (Morocco)
 Repository: https://github.com/mohamedaitzaouit84-hue/governance-kernel
 

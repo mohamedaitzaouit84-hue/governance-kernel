@@ -38,3 +38,17 @@ Links and DOIs will be added here once collected.
 
 This project is the work of one person. It carries the strengths
 and the limitations of that reality. See docs/OPENING.md section 6.
+
+---
+
+## Project DOI (V0.5)
+
+**DOI**: 10.5281/zenodo.22773365
+**URL**: https://doi.org/10.5281/zenodo.22773365
+**Published**: 2026-09-15
+**Type**: Software
+**Archive**: Zenodo (CERN)
+**ORCID link**: Verified and synced automatically
+
+This DOI references the V0.5 CLOSED release of Governance Kernel.
+Any academic citation should use this DOI.
