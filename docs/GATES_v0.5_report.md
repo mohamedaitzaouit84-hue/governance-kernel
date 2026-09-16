@@ -5,6 +5,9 @@
 **Date**: 2026-09-15
 **Predecessor**: V0.4-CLOSED (Kernel PRI = 1.0000)
 **Freeze reference**: docs/FREEZE_v0.5.md
+**DOI**: 10.5281/zenodo.22773365
+**DOI URL**: https://doi.org/10.5281/zenodo.22773365
+**ORCID**: 0009-0007-3278-5577
 
 ---
 
