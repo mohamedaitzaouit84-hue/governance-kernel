@@ -102,6 +102,12 @@ def resolve(proposal, owner_signature=None):
             "proposal not votable: state=" + proposal.state
         )
 
+    # Principle 6 — Invariant Laws: no duplicate votes by same agent
+    voter_ids = [v["agent_id"] for v in proposal.votes]
+    if len(voter_ids) != len(set(voter_ids)):
+        duplicates = sorted({x for x in voter_ids if voter_ids.count(x) > 1})
+        raise ConsensusError("duplicate vote by agent: " + ",".join(duplicates))
+
     if len(proposal.votes) < MIN_QUORUM:
         proposal.state = ProposalState.REJECTED
         proposal.sealed_at = time.time()

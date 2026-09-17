@@ -180,3 +180,44 @@ integrity.py يتوقع GENESIS_HASH ("0"*64) للسجل الأول.
 
 **الدرس**: "مؤجل" بدون سبب نصي = فشل مُخفي. الفشل الموثق
 أفضل من التأجيل الغامض.
+
+---
+
+## J-0.6.1 — Duplicate-agent voting (2026-09-17)
+
+**What happened**: during G0.19 test (H21), it was discovered that
+`resolve()` in `agents/multi/consensus.py` does not prevent the same
+`agent_id` from casting multiple votes. A single agent can satisfy
+MIN_QUORUM alone.
+
+**Why**: the original implementation counted votes by list length,
+without checking for distinct agent_id values.
+
+**Impact**: 4 of 20 attempts in G0.19 (i = 4, 9, 14, 19) were not
+blocked. This is a real single-agent control vector.
+
+**Fix planned**: add a distinct-agent-id check in `resolve()`, and
+raise ConsensusError if duplicates are found.
+
+**Test**: will be added as scenario 4 in G0.19 (rebuilt).
+
+**Cost**: 25 minutes.
+
+---
+
+## J-0.6.2 — G0.19 test scenario 2 was mislabeled (2026-09-17)
+
+**What happened**: scenario 2 in test_g019 treated a legitimate
+weighted decision as an attack. compute_agent_1 (cap 2.0) vs
+query_agent_1 + system (0.85 + 0.85 = 1.70) is a valid decision,
+not a single-agent control attempt.
+
+**Impact**: 4 of 20 attempts (i = 2, 7, 12, 17) were marked
+"not blocked" but should have been counted as legitimate outcomes.
+
+**Fix planned**: remove scenario 2 from the attack list. Keep it
+as a separate test of correct weighted decision.
+
+**Test**: will be reorganized in G0.19 (rebuilt).
+
+**Cost**: 15 minutes.
