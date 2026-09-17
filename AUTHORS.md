@@ -41,7 +41,25 @@ and the limitations of that reality. See docs/OPENING.md section 6.
 
 ---
 
-## Project DOI (V0.5)
+## Project DOIs
+
+### V0.6 (current)
+
+**DOI**: 10.5281/zenodo.22812967
+**URL**: https://doi.org/10.5281/zenodo.22812967
+**Published**: 2026-09-17
+**Type**: Software
+**Archive**: Zenodo (CERN)
+**Concept DOI** (always latest): 10.5281/zenodo.22773364
+**Software Heritage**: swh:1:dir:fa0f4466b847554a7669520a620b0...
+
+### V0.5
+
+**DOI**: 10.5281/zenodo.22773365
+**URL**: https://doi.org/10.5281/zenodo.22773365
+**Published**: 2026-09-15
+
+### Legacy section title (kept for compatibility)
 
 **DOI**: 10.5281/zenodo.22773365
 **URL**: https://doi.org/10.5281/zenodo.22773365
