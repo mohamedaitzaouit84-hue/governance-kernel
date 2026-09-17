@@ -510,3 +510,47 @@ Verification:
 ### Scope
 
 V0.5 and beyond. This is the mechanism for all future policy growth.
+
+---
+
+## P-Q12 — Trust-Weighted Consensus
+
+**Category**: Distributed Governance
+**Introduced**: V0.6
+**Hypothesis**: H21
+**Inspiration** (multiple sources, no hierarchy)
+- Weighted voting in constitutional law
+- Byzantine fault tolerance (distributed systems)
+- Structural symmetry (classical texts)
+
+### Statement
+
+Decisions are made by weighted vote. Weight is derived from trust,
+capped at 2.0 per agent. No single agent can force a decision.
+A minimum quorum of 2 distinct agents must vote.
+
+### Properties
+
+1. MAX_WEIGHT_PER_AGENT = 2.0
+2. MIN_QUORUM = 2 distinct agent_id values
+3. NO_SELF_VOTE = True (proposer cannot vote on own proposal)
+4. TIE_BREAK = owner signature
+5. Every decision double-attested (audit + journal)
+
+### Engineering form
+
+    agents/multi/proposal.py       (Proposal, Rejection, ProposalState)
+    agents/multi/consensus.py      (weighted_vote, resolve)
+    agents/multi/communication.py  (kernel-mediated channel)
+    agents/multi/coordinator.py    (Read -> Compute -> Write)
+
+### Test (H21)
+
+20 single-agent control attempts must all be blocked.
+
+Verification: tests/gate_v06/test_g019_consensus.py
+Result: 20/20 CLOSED
+
+### Scope
+
+V0.6 and beyond. Reusable for any multi-agent consensus.
