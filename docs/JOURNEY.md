@@ -221,3 +221,45 @@ as a separate test of correct weighted decision.
 **Test**: will be reorganized in G0.19 (rebuilt).
 
 **Cost**: 15 minutes.
+
+---
+
+## J-0.7.1 — resolve() accepts PENDING state (2026-09-20)
+
+**What happened**: during V0.7.1 Red Team (G0.25, test T1),
+it was discovered that `resolve()` in `agents/multi/consensus.py`
+accepts a proposal whose state is `PENDING` (not `VOTING`).
+
+The condition in V0.6 was:
+
+    if proposal.state != ProposalState.PENDING and \
+       proposal.state != ProposalState.VOTING:
+        raise ConsensusError(...)
+
+This allows a newly-created proposal to be resolved WITHOUT
+entering the VOTING state. A proposer could bypass the voting
+phase entirely.
+
+**Why**: the original V0.6 code treated PENDING as a valid
+state for resolve(). This was intended as "resolve a fresh
+proposal that has no votes yet". But it opens a bypass.
+
+**Impact**: severity MEDIUM. In practice, callers (coordinator)
+always set state=VOTING before resolving. But the invariant
+is not enforced at the protocol layer.
+
+**Fix planned**: in V0.7.1.1 (emergency patch), change the
+state check to REJECT PENDING in resolve(). Only VOTING and
+terminal states are accepted. Also, add a guard: resolve()
+cannot accept a proposal with zero votes and zero quorum path.
+
+**Note**: this finding is logged BEFORE any fix, per
+docs/OPENING.md. V0.7.1 gate G0.25 fails as designed.
+
+**Test**: T1 in tests/gate_v07/test_g025_timing.py
+currently returns False (not blocked) until fix.
+
+**Cost estimate**: 20 minutes.
+
+**Decision**: V0.7.1 is declared PARTIAL until fix.
+V0.7.1.1 will be a patch release, followed by re-run of G0.25.
