@@ -97,7 +97,7 @@ def resolve(proposal, owner_signature=None):
     Mutates proposal.state, sets sealed_at, records rejection if rejected.
     Returns the attestation record.
     """
-    if proposal.state != ProposalState.PENDING and proposal.state != ProposalState.VOTING:
+    if proposal.state != ProposalState.VOTING:
         raise ConsensusError(
             "proposal not votable: state=" + proposal.state
         )
