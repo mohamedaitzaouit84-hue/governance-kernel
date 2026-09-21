@@ -263,3 +263,106 @@ currently returns False (not blocked) until fix.
 
 **Decision**: V0.7.1 is declared PARTIAL until fix.
 V0.7.1.1 will be a patch release, followed by re-run of G0.25.
+
+---
+
+## J-0.7.2 — GPG setup not completed (2026-09-17)
+
+**What happened**: attempted to set up GPG key for git commit
+signing. Termux prompts for interactive key generation were
+error-prone on mobile. The process was interrupted.
+
+**Impact**: commits are NOT signed with GPG. They are signed
+with git's own author identity only.
+
+**Workaround**: rely on GitHub's verified-commits via HTTPS.
+
+**Cost**: 20 minutes.
+
+**Status**: accepted limitation. Documented here for honesty.
+
+---
+
+## J-0.7.3 — llama-cpp-python fails on Termux/Android (2026-09-17)
+
+**What happened**: attempted to install llama-cpp-python for
+V0.6a (LLM agent plan). The wheel was built successfully but
+loading it raised RuntimeError("Unsupported platform").
+
+**Root cause**: PyPI wheels for llama-cpp-python do not
+support Android ARM64 at the platform-name level.
+
+**Impact**: V0.6a (LLM) was abandoned. Pivoted to V0.6
+(multi-agent without LLM).
+
+**Alternative considered**: ctransformers, ollama. All have
+similar platform limitations.
+
+**Cost**: 2 hours.
+
+**Status**: abandoned. Preserved as docs/FREEZE_v0.6_LLM_ABANDONED.md.
+
+---
+
+## J-0.7.4 — Heredoc typo incident (2026-09-20)
+
+**What happened**: during V0.7.2 work, a documentation
+snippet was pasted directly into Termux instead of being
+wrapped in a heredoc. Bash attempted to execute the text
+as commands, producing "command not found" errors.
+
+**Impact**: no files changed, no state corruption. Screen
+noise only.
+
+**Lesson**: always verify paste destination. Heredoc content
+must be inside `cat > file << 'EOF' ... EOF`.
+
+**Cost**: 5 minutes.
+
+**Status**: documented as a process lesson.
+
+---
+
+## J-0.7.5 — Test typo s2_fake_agent (2026-09-20)
+
+**What happened**: in test_g023_sybil.py, a function was
+defined as `s2_fake_agent_not_registered` but referenced
+as `s2_fake_agent_not_in_registry` in the attacks list.
+
+**Impact**: NameError on first run of the test.
+
+**Fix**: safe patch (replace + assert count == 1).
+
+**Lesson**: naming inconsistencies are caught early by
+running tests immediately after writing. The discipline
+of "test immediately" prevented any delay.
+
+**Cost**: 5 minutes.
+
+**Status**: fixed. Pattern captured in safe-patch methodology.
+
+---
+
+## J-0.7.6 — Runner variance between runs (2026-09-20)
+
+**What happened**: performance measurements on the same
+device differed between runs:
+- Cycle median: 0.833 ms → 1.112 ms (+34%)
+- Throughput median: 1131/s → 897/s (-21%)
+
+**Root cause**: Android background processes, CPU thermal
+state, screen on/off, GC timing. Not controllable from
+within Termux.
+
+**Impact**: numbers are NOT stable. Thresholds still hold
+by large margins, but absolute numbers should not be
+quoted as if they were fixed.
+
+**Mitigation**: documented in PERFORMANCE_v0.6.md section 5
+("Honesty about Variance"). Thresholds are set with wide
+margins (11x - 120x) precisely because of this.
+
+**Cost**: 30 minutes of analysis.
+
+**Status**: documented. Accepted limitation of single-device
+measurement.

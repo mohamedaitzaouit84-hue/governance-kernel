@@ -22,11 +22,52 @@ Links and DOIs will be added here once collected.
 
 ## Contributions to this project
 
-- Architecture: 100%
-- Code: 100%
-- Documentation: 100%
-- Testing: 100%
-- Methodology: 100%
+### Human author (Ahmed Ait Zaouit)
+
+- Architecture and design: 100%
+- All design decisions: 100%
+- All methodology (FREEZE, GATES, pre-registered thresholds): 100%
+- Critical review and correction: 100%
+- Problem discovery (J-0.6.1, J-0.6.2, J-0.7.1): 100%
+- Prioritization and direction: 100%
+- Code authoring: ~60% (line-by-line)
+- Documentation authoring: ~30% (line-by-line)
+- Test authoring: ~40% (line-by-line)
+
+### AI assistant (Claude, Anthropic)
+
+This project was developed in collaboration with an AI
+assistant (Claude). The AI contributed:
+
+- Draft code generation and refactoring suggestions
+- Draft documentation structure and prose
+- Test skeleton generation
+- Syntax checking and consistency verification
+
+The AI did NOT:
+
+- Make architectural decisions
+- Choose which problems to solve
+- Decide what to freeze or how
+- Interpret test results
+- Approve any release
+- Own any part of the project
+
+All final decisions, reviews, and approvals were made by
+the human author. All AI-generated content was reviewed,
+corrected, and adapted by the human author before commit.
+
+### Methodological note
+
+The collaboration was governed by docs/OPENING.md:
+- No claim without a test
+- Failures logged before fixes
+- Honest reporting of scope and limits
+- Human review of every AI output
+
+This disclosure is provided for scientific integrity.
+Modern tool-assisted research should be transparent about
+which tools were used and how.
 
 ## Acknowledgments
 
