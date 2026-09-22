@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "audit"))
 import root
 import append_only_log as audit
 
-KERNEL_DIR = Path.home() / "governance_kernel"
+KERNEL_DIR = Path(__file__).resolve().parent.parent
 REGISTRY = KERNEL_DIR / "branches" / "registry.jsonl"
 
 

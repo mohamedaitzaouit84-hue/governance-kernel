@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "seed"))
 import root
 
-KERNEL_DIR = Path.home() / "governance_kernel"
+KERNEL_DIR = Path(__file__).resolve().parent.parent
 LOG_PATH = KERNEL_DIR / "logs" / "audit.jsonl"
 CKPT_PATH = KERNEL_DIR / "logs" / "checkpoints.jsonl"
 GENESIS_HASH = "0" * 64

@@ -5,7 +5,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "seed"))
 import root
 
-KERNEL_DIR = Path.home() / "governance_kernel"
+KERNEL_DIR = Path(__file__).resolve().parent.parent
 POLICY_FILE = KERNEL_DIR / "policy" / "policies" / "default.yaml"
 POLICY_SIG = KERNEL_DIR / "policy" / "policies" / "default.yaml.sig"
 

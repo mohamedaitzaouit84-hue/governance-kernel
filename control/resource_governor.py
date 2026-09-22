@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "policy"))
 import append_only_log as audit
 import policy_store
 
-KERNEL_DIR = Path.home() / "governance_kernel"
+KERNEL_DIR = Path(__file__).resolve().parent.parent
 STATE = KERNEL_DIR / "control" / "resource_state.json"
 WINDOW = 60.0
 

@@ -14,7 +14,7 @@ and trust resets to min.
 from pathlib import Path
 
 # Sandbox root: FileAgent may only touch files inside this directory.
-SANDBOX_ROOT = Path.home() / "governance_kernel" / "agents_sandbox"
+SANDBOX_ROOT = Path(__file__).resolve().parent.parent / "agents_sandbox"
 
 # Whitelist of file actions that stay within sandbox.
 FILE_ACTIONS = {"file_read", "file_write", "file_list", "file_delete"}

@@ -73,7 +73,18 @@ PROTECTED_FILES = {
 
 # Explicitly allowed to change
 ALLOWED_EXCEPTIONS = {
-    "agents/multi/consensus.py",  # v0.6.1 patch
+    # v0.6.1 patch (J-0.7.1)
+    "agents/multi/consensus.py",
+    # v0.7.6 patch (J-0.8.3): Path Portability phase 1
+    "seed/root.py",
+    # v0.7.7 patch (J-0.8.5): Path Portability phase 2
+    "audit/append_only_log.py",
+    "audit/integrity.py",
+    "policy/policy_store.py",
+    "authorization/branch_registry.py",
+    "control/kill_switch.py",
+    "control/resource_governor.py",
+    "agents/invariant_checker.py",
 }
 
 
