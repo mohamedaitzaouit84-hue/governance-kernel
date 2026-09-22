@@ -36,15 +36,25 @@
 | V0.4 (Attacks) | CLOSED | e67ec7f |
 | V0.4.1 (Registry) | fix | 1f26943 |
 | PATTERNS.md | written | 030ce06 |
-| **V0.5 (Agents)** | **✅ CLOSED** | **8cd93d4** |
+| **V0.5 (Agents)** | **CLOSED** | **8cd93d4** |
+| **V0.6 (Multi-Agent)** | **CLOSED (5/5)** | **3cdb44f** |
+| **V0.6.1 (Patch)** | **CLOSED** | **d3cdbe7** |
+| **V0.7.1 (Red Team)** | **CLOSED (6/6)** | **e8f304f** |
+| **V0.7.2 (Performance)** | **CLOSED (3/3)** | **3f9490d** |
+| **V0.7.3 (Real Agents)** | **CLOSED (4/4)** | **4d9f49a** |
+| **V0.7.4 (Delegation)** | **CLOSED (3/3)** | **cee7dce** |
+| **V0.7.5 (Bootstrap)** | **CLOSED** | **e134f22** |
+| **V0.7.6 (Path Port 1)** | **CLOSED** | **330b861** |
+| **V0.7.7 (Path Port 2)** | **CLOSED (7 files)** | **1042f62** |
+| **V0.7.8 (Bootstrap Resign)** | **CLOSED** | **01d3961** |
+| **V0.7.9 (Audit Self-Heal)** | **CLOSED (19/19)** | **a7ea635** |
 
 ### In Progress
-None. V0.5 closed. Next: V0.6 or publish V0.4.
+None. V0.7.9 closed. V0.7 comprehensive series complete (19/19 on Colab).
 
 ### Not Started
-- V0.6 local LLM
-- V0.7 multi-agent + consensus
-- V0.8+ distributed registry, self-evolution
+- V0.8 (red team external, arXiv preprint, SDK)
+- V0.9+ distributed registry, self-evolution
 
 ---
 
@@ -65,12 +75,12 @@ Pre-registered threshold: 0.95 -> passed.
 - G0.11 Counterfactual: FAILED (finding documented)
 
 ### General inventory
-- Commits: ~30
+- Commits: ~85
 - Lines of code: ~2500
 - Lines of docs: ~4000
 - Reference docs: 17+
-- Patterns: 15
-- Testable hypotheses: 15 (H1-H15)
+- Patterns: 18
+- Testable hypotheses: 18 (H1-H32 selected) (H1-H15)
 - Attack tests: 5 (54 cases)
 
 ## 5. Architecture
