@@ -615,3 +615,67 @@ for 7 versions (V0.1 through V0.7) reveals that the entire
 
 The audit turned a local workaround into a global fix.
 This is what external testing is for.
+
+---
+
+## J-0.8.6 — Policy signature invalid after bootstrap (2026-09-22)
+
+**What happened**: after V0.7.7, on a fresh Colab clone,
+test_g031 failed with:
+
+    RuntimeError: policy signature INVALID — possible tamper
+
+traceback points to:
+    policy/policy_store.py:39 load()
+    -> root.verify(_hash_policy(text), sig) fails
+
+**Root cause**: default.yaml.sig is committed to Git and
+was signed with the ORIGINAL owner key from the Termux
+device. When a fresh clone runs bootstrap.py, a NEW owner
+key is generated. The old signature (from Git) does not
+match the new key.
+
+Result: policy_store.load() raises RuntimeError on every
+fresh clone.
+
+**Impact**: HIGH. This is the THIRD defect in the fresh
+clone path:
+- J-0.8.1: bootstrap.py missing
+- J-0.8.3: seed/root.py Path.home()
+- J-0.8.5: 7 files Path.home()
+- J-0.8.6: default.yaml.sig from old key
+
+Without a fresh clone, this is invisible because Termux
+keeps the same key forever.
+
+**Fix planned** (V0.7.8 - Bootstrap resigning):
+
+In bootstrap.py, after generating the new owner key:
+  1. Detect that default.yaml.sig exists but is invalid
+  2. Re-sign default.yaml with the new key
+  3. Overwrite default.yaml.sig
+
+This is safe: the policy CONTENT is unchanged. Only the
+signature is regenerated.
+
+Additionally, G0.34 (V0.5 Untouched) must be updated:
+- V0.7.7 modified agents/invariant_checker.py
+- This is a documented deviation (see FREEZE_v0.7.7)
+- Add invariant_checker.py to G0.34's ALLOWED_EXCEPTIONS
+- Document J-0.8.6
+
+**Cost estimate**: 1-2 hours.
+
+**Status**: documented. Fix planned for V0.7.8.
+
+**Scientific note**: the fresh-clone path has more
+defects than expected. Each defect was hidden by the
+Termux assumption that "the repo is always at $HOME and
+the key is always the original key". External testing
+revealed them all.
+
+This is the SIXTH reproducibility gap found by external
+testing. The pattern is now clear:
+- Every assumption about the environment is a potential
+  reproducibility defect.
+- Only external testing reveals them.
