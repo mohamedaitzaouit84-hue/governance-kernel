@@ -366,3 +366,66 @@ margins (11x - 120x) precisely because of this.
 
 **Status**: documented. Accepted limitation of single-device
 measurement.
+
+---
+
+## J-0.8.1 — V0.5 agents fail on fresh clone (2026-09-22)
+
+**What happened**: tested `git clone` + `run_all.py` on a
+fresh Google Colab environment. 3 gates failed:
+
+    G0.31 Real FileAgent      FAILED (0/10)
+    G0.32 Real ComputeAgent   FAILED (0/10)
+    G0.33 Real QueryAgent     FAILED (0/10)
+
+All other gates passed (13/16 closed).
+
+**Root cause**: V0.5 agents require 3 files that are
+excluded from git by `.gitignore` for safety:
+
+    identity/owner_key.priv    (owner private key)
+    identity/root_state.json   (root state)
+    audit/audit.jsonl          (audit chain log)
+
+On Termux (original dev device), these files exist locally
+and V0.5 agents work. On a fresh clone (Colab, new device),
+they are missing. `governed_action_v05` fails when it tries
+to sign or verify actions. `agent.act()` raises, and the
+coordinator reports "read_exec_failed".
+
+**Impact**: MEDIUM-HIGH. The project claims reproducibility.
+It is reproducible for V0.4, V0.6, V0.7.1, V0.7.2, V0.7.4
+(13/16 gates), but NOT for V0.5 agents (V0.7.3 phase).
+This is a real gap that a fresh-clone test would find
+in seconds.
+
+**Severity**: This is a Reproducibility failure — a
+foundational property in scientific work.
+
+**Fix plan** (V0.7.5 - Fresh Clone Support):
+
+1. Add a `bootstrap.py` script that:
+   - Generates a fresh owner key if missing
+   - Creates an empty audit.jsonl if missing
+   - Registers owner + agents into subjects.json
+   - Prints the new owner fingerprint
+
+2. Update run_all.py to call bootstrap.py first.
+
+3. Update README.md with "Fresh clone setup" section.
+
+4. Document that `owner_key.priv` from the original device
+   is NOT distributable, and that a fresh key is expected.
+
+5. Add a new test: `test_g038_fresh_clone_setup.py` that
+   verifies bootstrap works on a clean checkout.
+
+**Cost estimate**: 2-4 hours.
+
+**Status**: documented. Fix is planned for V0.7.5.
+
+**Scientific note**: this finding validates the decision
+to run external tests. Self-testing on the dev device hid
+this defect. External environments expose it. This is
+exactly why reproducible scientific work requires
+independent verification.
