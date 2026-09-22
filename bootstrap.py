@@ -100,6 +100,43 @@ def step_subjects():
         print("  [SKIP] all subjects already registered")
 
 
+def step_policy_signature():
+    """Re-sign default.yaml if signature is invalid.
+
+    Fresh clones have default.yaml + default.yaml.sig from Git.
+    The signature was made with the ORIGINAL owner key.
+    bootstrap.py generates a NEW key.
+    We must re-sign so policy_store.load() succeeds.
+    """
+    import hashlib
+    policy_dir = REPO / "policy" / "policies"
+    policy_file = policy_dir / "default.yaml"
+    sig_file = policy_dir / "default.yaml.sig"
+
+    if not policy_file.exists():
+        print("  [SKIP] default.yaml not found")
+        return
+    if not sig_file.exists():
+        print("  [SKIP] default.yaml.sig not found")
+        return
+
+    text = policy_file.read_text(encoding="utf-8")
+    policy_hash = hashlib.sha256(text.encode("utf-8")).hexdigest().encode("utf-8")
+
+    try:
+        sig = bytes.fromhex(sig_file.read_text(encoding="utf-8").strip())
+        if root.verify(policy_hash, sig):
+            print("  [SKIP] default.yaml.sig valid")
+            return
+    except Exception:
+        pass  # invalid hex or verify error -> resign below
+
+    print("  [FIX ] policy signature invalid — re-signing")
+    new_sig = root.sign(policy_hash)
+    sig_file.write_text(new_sig.hex(), encoding="utf-8")
+    print("  [FIX ] default.yaml.sig regenerated")
+
+
 def main():
     print("=" * 60)
     print("Governance Kernel — bootstrap.py")
@@ -112,6 +149,7 @@ def main():
     step_root_state()
     step_audit_log()
     step_subjects()
+    step_policy_signature()
 
     print()
     print("=" * 60)

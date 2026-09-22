@@ -49,6 +49,16 @@ V05_FILES = {
 }
 
 
+# Files in V05_FILES that may change, with documented justification.
+# Preserves the SPIRIT of G0.34 (detect UNDOCUMENTED modifications)
+# while acknowledging DOCUMENTED ones.
+ALLOWED_EXCEPTIONS = {
+    # V0.7.7 Path Portability (J-0.8.5)
+    # Reference: docs/FREEZE_v0.7.7.md section 0
+    "agents/invariant_checker.py",
+}
+
+
 def _git_diff_names(base, head="HEAD"):
     try:
         result = subprocess.run(
@@ -84,6 +94,8 @@ def main():
     violations = []
     for name in names:
         if name in V05_FILES:
+            if name in ALLOWED_EXCEPTIONS:
+                continue  # documented exception
             violations.append(name)
 
     if violations:
