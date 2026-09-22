@@ -26,6 +26,15 @@ TESTS = [
 
 
 def main():
+    # Auto-bootstrap if needed (fresh clone support)
+    import subprocess as _sp
+    import sys as _sys
+    _repo = Path(__file__).resolve().parent.parent.parent
+    _bs = _repo / "bootstrap.py"
+    if _bs.exists():
+        _sp.call([_sys.executable, str(_bs)], cwd=str(_repo))
+        print()
+
     print("=" * 60)
     print("V0.7 — Red Team + Performance + Real Agents + Delegation — Gate Report")
     print("=" * 60)
