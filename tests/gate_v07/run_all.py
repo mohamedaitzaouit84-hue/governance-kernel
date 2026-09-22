@@ -15,12 +15,16 @@ TESTS = [
     ("G0.28 Cycle Time",            "test_g028_cycle_time.py"),
     ("G0.29 Memory Bound",          "test_g029_memory.py"),
     ("G0.30 Throughput",            "test_g030_throughput.py"),
+    ("G0.31 Real FileAgent",        "test_g031_real_file.py"),
+    ("G0.32 Real ComputeAgent",     "test_g032_real_compute.py"),
+    ("G0.33 Real QueryAgent",       "test_g033_real_query.py"),
+    ("G0.34 V0.5 Untouched",        "test_g034_v05_untouched.py"),
 ]
 
 
 def main():
     print("=" * 60)
-    print("V0.7 — Red Team + Performance — Gate Report")
+    print("V0.7 — Red Team + Performance + Real Agents — Gate Report")
     print("=" * 60)
     results = []
     for label, fname in TESTS:
@@ -39,7 +43,7 @@ def main():
     print()
     print("V0.7 gates: {}/{} closed".format(passed, len(TESTS)))
     if passed == len(TESTS):
-        print("--> V0.7.1 + V0.7.2 CLOSED")
+        print("--> V0.7.1 + V0.7.2 + V0.7.3 CLOSED")
     elif passed >= 5:
         print("--> V0.7 PARTIAL ({} findings pending)".format(
             len(TESTS) - passed))
