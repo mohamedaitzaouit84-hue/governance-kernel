@@ -547,3 +547,71 @@ CI, any developer machine) will expose it immediately.
 
 The lesson: a single Path.home() fix is not enough.
 Portability requires a systematic audit.
+
+---
+
+## J-0.8.5 — Full audit: 7 files use Path.home() (2026-09-22)
+
+**What happened**: after J-0.8.4, a systematic grep across
+the whole codebase found ALL Path.home() usages.
+
+**Full list (7 files)**:
+
+V0.1 files (audit/, policy/, authorization/, control/):
+1. audit/append_only_log.py       line 8
+2. audit/integrity.py             line 7
+3. policy/policy_store.py         line 8
+4. authorization/branch_registry.py line 10
+5. control/kill_switch.py         line 10
+6. control/resource_governor.py   line 9
+
+V0.5 file:
+7. agents/invariant_checker.py    line 17 (SANDBOX_ROOT)
+
+**What is already correct** (V0.2a, V0.3):
+- audit/rotation.py              uses _kernel (from __file__)
+- authorization/subject_registry.py uses _root (from __file__)
+- memory/episodic/event_log.py   uses _kernel
+- memory/semantic/graph.py       uses _kernel
+- seed/root.py                   FIXED in V0.7.6
+
+**Analysis**: V0.1 used Path.home() consistently. V0.2a and
+V0.3 corrected this pattern. V0.5 regressed (invariant_checker).
+
+**Fix planned** (V0.7.7 - Path Portability phase 2):
+
+For each of the 7 files, replace:
+
+    KERNEL_DIR = Path.home() / "governance_kernel"
+
+with:
+
+    KERNEL_DIR = Path(__file__).resolve().parent.parent
+
+For agents/invariant_checker.py:
+
+    SANDBOX_ROOT = Path.home() / "governance_kernel" / "agents_sandbox"
+  ->
+    SANDBOX_ROOT = Path(__file__).resolve().parent.parent / "agents_sandbox"
+
+Note: agents/invariant_checker.py is a V0.5 file. Fixing it
+also deviates from Kernel Untouched (V0.5 was frozen).
+This deviation is documented here.
+
+**Impact of fixing**: on Termux, no behavior change (same
+path). On Colab/external machines, all 7 files now work.
+
+**Cost estimate**: 3-4 hours.
+
+**Status**: documented. Fix planned for V0.7.7.
+
+**Scientific note**: this is the FIFTH reproducibility gap
+found by external testing, and the most important.
+
+Why: it is not a single bug. It is a SYSTEMATIC pattern
+spread across 7 files. The fact that it went undetected
+for 7 versions (V0.1 through V0.7) reveals that the entire
+"works on my machine" assumption was never tested.
+
+The audit turned a local workaround into a global fix.
+This is what external testing is for.
