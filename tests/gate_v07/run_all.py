@@ -19,12 +19,15 @@ TESTS = [
     ("G0.32 Real ComputeAgent",     "test_g032_real_compute.py"),
     ("G0.33 Real QueryAgent",       "test_g033_real_query.py"),
     ("G0.34 V0.5 Untouched",        "test_g034_v05_untouched.py"),
+    ("G0.35 Delegation Issued",     "test_g035_delegation_issued.py"),
+    ("G0.36 Delegation Expires",    "test_g036_delegation_expires.py"),
+    ("G0.37 Delegation Revoked",    "test_g037_delegation_revoked.py"),
 ]
 
 
 def main():
     print("=" * 60)
-    print("V0.7 — Red Team + Performance + Real Agents — Gate Report")
+    print("V0.7 — Red Team + Performance + Real Agents + Delegation — Gate Report")
     print("=" * 60)
     results = []
     for label, fname in TESTS:
@@ -43,7 +46,7 @@ def main():
     print()
     print("V0.7 gates: {}/{} closed".format(passed, len(TESTS)))
     if passed == len(TESTS):
-        print("--> V0.7.1 + V0.7.2 + V0.7.3 CLOSED")
+        print("--> V0.7.1 + V0.7.2 + V0.7.3 + V0.7.4 CLOSED")
     elif passed >= 5:
         print("--> V0.7 PARTIAL ({} findings pending)".format(
             len(TESTS) - passed))

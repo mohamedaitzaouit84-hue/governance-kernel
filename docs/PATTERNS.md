@@ -554,3 +554,49 @@ Result: 20/20 CLOSED
 ### Scope
 
 V0.6 and beyond. Reusable for any multi-agent consensus.
+
+---
+
+## P-Q13 — Delegated Authority
+
+**Category**: Distributed Governance
+**Introduced**: V0.7.4
+**Hypothesis**: H24
+**Inspiration** (multiple sources, no hierarchy)
+- OAuth scopes (limited-time tokens)
+- AWS STS temporary credentials
+- Legal power of attorney (revocable)
+- Canon Law (papal delegation to bishops)
+
+### Statement
+
+Authority can be delegated from a granter (usually the owner)
+to a grantee (an agent) for a bounded scope and a bounded time.
+The delegation is revocable at any moment by the granter.
+Revocation takes immediate effect. Past accepted proposals
+are NOT altered by later revocation.
+
+### Properties
+
+1. SCOPE-BOUND: only actions in the delegation's scope are allowed
+2. TIME-BOUND: expired delegations are auto-denied
+3. REVOCABLE: revocation is immediate and permanent
+4. NO-ESCALATION: cannot delegate "owner" scope
+5. IN-MEMORY: V0.7.4 does not persist (V0.7.4.1 will)
+
+### Engineering form
+
+    agents/multi/delegation.py
+      - Delegation: single grant
+      - DelegationRegistry: in-memory registry
+      - is_allowed(grantee, action): the entry point
+
+### Test (H24)
+
+5 delegations issued. 5 expire. 5 revoked.
+All 15 attempts handled correctly.
+See tests/gate_v07/test_g035, g036, g037.
+
+### Scope
+
+V0.7.4 and beyond. Reusable for temporary privilege escalation.
