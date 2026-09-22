@@ -679,3 +679,67 @@ testing. The pattern is now clear:
 - Every assumption about the environment is a potential
   reproducibility defect.
 - Only external testing reveals them.
+
+---
+
+## J-0.8.7 — Empty audit.jsonl breaks append (2026-09-22)
+
+**What happened**: after V0.7.8, fresh Colab clone runs
+bootstrap.py which creates `logs/audit.jsonl` as an EMPTY
+file (0 bytes). Then test_g031 calls agent.act() which
+flows into audit.append(). That raises:
+
+    File "audit/append_only_log.py", line 72, in append
+        seq = last["seq"] + 1
+    TypeError: 'NoneType' object is not subscriptable
+
+**Root cause**: `_read_last()` returns None for an empty
+file. `append()` assumes `_read_last()` always returns a
+dict. On first-ever append to a fresh (empty) log, this
+assumption fails.
+
+**Why this was hidden before V0.7.5**:
+- On Termux, `logs/audit.jsonl` was NEVER empty.
+- It existed with records (from V0.1 genesis).
+- `bootstrap.py` (V0.7.5) creates an empty file to satisfy
+  the "file exists" check.
+- This makes the first append crash.
+
+**Impact**: HIGH. V0.5 agents cannot run on any fresh
+clone because every action tries to append to the log.
+This is the SEVENTH reproducibility gap found by
+external testing.
+
+**Fix planned** (V0.7.9):
+
+Modify `audit/append_only_log.py::_read_last()` to return
+a synthetic genesis record if the file is empty or
+missing:
+
+    if file is empty:
+        return {
+            "seq": 0,
+            "ts": 0,
+            "prev_hash": "0" * 64,
+            "kind": "genesis_synthetic",
+            "data": {},
+            "hash": "0" * 64,
+        }
+
+This makes `append()` work correctly on empty logs.
+Alternatively, `bootstrap.py` should write a genesis
+record instead of creating an empty file.
+
+The preferred fix is in `_read_last()`, because it makes
+the log module self-healing regardless of how the file
+was created.
+
+**Cost estimate**: 30-45 minutes.
+
+**Status**: documented. Fix planned for V0.7.9.
+
+**Scientific note**: this is the SEVENTH reproducibility
+gap. The pattern continues: each fix exposes a new
+assumption that only external testing reveals. The
+"fresh clone" path has been a cascade of hidden
+assumptions about local state.
