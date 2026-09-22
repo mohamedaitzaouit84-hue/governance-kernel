@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 
-KERNEL_DIR = Path.home() / "governance_kernel"
+KERNEL_DIR = Path(__file__).resolve().parent.parent
 IDENTITY_DIR = KERNEL_DIR / "identity"
 OWNER_KEY_PRIV = IDENTITY_DIR / "owner_key.priv"
 OWNER_KEY_PUB = IDENTITY_DIR / "owner_key.pub"

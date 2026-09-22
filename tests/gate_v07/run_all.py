@@ -22,6 +22,7 @@ TESTS = [
     ("G0.35 Delegation Issued",     "test_g035_delegation_issued.py"),
     ("G0.36 Delegation Expires",    "test_g036_delegation_expires.py"),
     ("G0.37 Delegation Revoked",    "test_g037_delegation_revoked.py"),
+    ("G0.39 Path Portability",      "test_g039_path_portability.py"),
 ]
 
 
