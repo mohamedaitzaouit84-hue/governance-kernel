@@ -429,3 +429,121 @@ to run external tests. Self-testing on the dev device hid
 this defect. External environments expose it. This is
 exactly why reproducible scientific work requires
 independent verification.
+
+---
+
+## J-0.8.3 — seed/root.py assumes Path.home() (2026-09-22)
+
+**What happened**: during external testing on Google Colab,
+`bootstrap.py` failed at the very first step
+(`step_owner_key`), raising:
+
+    RuntimeError: مفتاح المالك موجود مسبقاً.
+
+even after manually deleting `identity/owner_key.*`.
+
+**Root cause**: `seed/root.py` (V0.1) uses an absolute path:
+
+    KERNEL_DIR = Path.home() / "governance_kernel"
+    IDENTITY_DIR = KERNEL_DIR / "identity"
+
+This assumes the repository is always at
+`$HOME/governance_kernel`. On Termux this is true.
+On Colab, the repository is at `/content/governance-kernel`,
+so `Path.home()` = `/root`, and the target directory is
+`/root/governance_kernel`.
+
+As a result:
+1. First run: `mkdir` creates `/root/governance_kernel/identity/`
+   and writes keys there.
+2. Second run: `OWNER_KEY_PRIV.exists()` at `/root/governance_kernel/`
+   is True -> RuntimeError.
+3. Keys are written OUTSIDE the repository. V0.5 agents
+   look for them inside the repo -> still fail.
+
+**Impact**: HIGH. This affects:
+- Google Colab
+- Any machine where the repo is not at `$HOME/governance_kernel`
+- Reproducibility across environments
+
+**Fix planned** (V0.7.6 - Path Portability):
+
+The `Path.home()` pattern is a foundational assumption in
+V0.1. Touching it would violate the Kernel Untouched rule.
+
+**Alternative fix**: teach `bootstrap.py` to work around it:
+- Detect the actual repo root via `Path(__file__).parent`
+- If `Path.home() / "governance_kernel"` differs from repo root,
+  print a clear WARNING
+- Do NOT call `root.generate_owner_key()` in that case
+- Instead: generate the key by calling `cryptography` directly,
+  using the repo-local path
+
+This keeps V0.1 untouched while making `bootstrap.py`
+portable.
+
+**Cost estimate**: 1-2 hours.
+
+**Status**: documented. Fix planned for V0.7.6.
+
+**Scientific note**: this is the SECOND reproducibility
+gap found by external testing. Both were invisible on the
+dev device. This strongly validates the decision to test
+on external environments BEFORE publishing.
+
+Only a Red Team from outside can find this class of defects.
+
+---
+
+## J-0.8.4 — policy_store.py also uses Path.home() (2026-09-22)
+
+**What happened**: after fixing seed/root.py (J-0.8.3),
+test_g031 on Colab still failed with:
+
+    FileNotFoundError: missing policy:
+    /root/governance_kernel/policy/policies/default.yaml
+
+The correct path on Colab is
+`/content/governance-kernel/policy/policies/default.yaml`.
+`/root/...` is the wrong location.
+
+**Root cause**: `policy/policy_store.py` uses the same
+`Path.home()` pattern that J-0.8.3 identified in `seed/root.py`:
+
+    KERNEL_DIR = Path.home() / "governance_kernel"
+    POLICY_FILE = KERNEL_DIR / "policy" / "policies" / "default.yaml"
+
+**Impact**: HIGH. Same class of defect as J-0.8.3.
+Any fresh clone (Colab, external machine, CI) fails to
+load the policy, and thus V0.5 agents fail.
+
+**Scope of the issue**: an audit is required across the
+entire V0.1-V0.4 codebase for other Path.home() usages.
+Candidate files (to be verified):
+
+    policy/policy_store.py        (confirmed)
+    policy/policy_engine.py       (candidate)
+    seed/root.py                  (fixed in V0.7.6)
+    control/*                     (candidate)
+    audit/*                       (candidate)
+    authorization/*               (candidate)
+
+**Fix planned** (V0.7.7 - Path Portability phase 2):
+
+Audit the whole codebase. Replace every
+`Path.home() / "governance_kernel"` with a __file__-based
+path. This is a second explicit deviation from Kernel
+Untouched, and it will be documented.
+
+**Cost estimate**: 2-3 hours.
+
+**Status**: documented. Fix planned for V0.7.7.
+
+**Scientific note**: this is the FOURTH reproducibility
+gap found by external testing. It was HIDDEN by the fact
+that Termux has the repo at $HOME/governance_kernel, so
+Path.home() works there. External environments (Colab,
+CI, any developer machine) will expose it immediately.
+
+The lesson: a single Path.home() fix is not enough.
+Portability requires a systematic audit.
