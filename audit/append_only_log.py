@@ -24,8 +24,21 @@ def _hash_record(seq, ts, prev_hash, kind, data):
 
 
 def _read_last():
+    """Return the last record, or a synthetic genesis if log is empty.
+
+    V0.7.9 (J-0.8.7): self-healing for empty or missing logs.
+    Ensures append() works after bootstrap.py creates an empty
+    logs/audit.jsonl file.
+    """
     if not LOG_PATH.exists() or LOG_PATH.stat().st_size == 0:
-        return None
+        return {
+            "seq": 0,
+            "ts": 0,
+            "prev_hash": "0" * 64,
+            "kind": "genesis_synthetic",
+            "data": {},
+            "hash": "0" * 64,
+        }
     last = None
     with open(LOG_PATH, "r", encoding="utf-8") as f:
         for line in f:
