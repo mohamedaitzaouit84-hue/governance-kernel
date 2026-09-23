@@ -1,6 +1,6 @@
 # Governance Kernel
 
-**A zero-dependency governance kernel for AI agents.**
+**A minimal-dependency governance kernel for AI agents.**
 Built on a single Android phone, with zero budget.
 Six gates closed. 54/54 attacks blocked. PRI = 1.0000.
 
@@ -23,7 +23,7 @@ A working implementation of governance-first architecture:
 - **Pre-registered thresholds.** Attack success rates are declared
   before running tests. No post-hoc adjustment.
 - **Failures are logged.** See docs/JOURNEY.md. Nothing is hidden.
-- **Zero external dependencies.** Python standard library only.
+- **One external dependency.** cryptography (Ed25519), for the trust anchor only. Everything else is Python standard library.
 
 Read docs/OPENING.md first — it defines what this project does
 and does NOT claim.
@@ -147,7 +147,7 @@ Untested hypotheses are listed in docs/PATTERNS.md.
     # Run V0.5 gate suite
     python tests/gate_v05/run_all.py
 
-No pip install required. Python 3.9+ standard library only.
+Requires Python 3.9+ and one external package: cryptography (used only by seed/root.py for Ed25519). Install with: pip install cryptography
 Total runtime: under 30 seconds on a phone.
 
 ---

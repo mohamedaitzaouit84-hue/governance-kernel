@@ -68,8 +68,31 @@ This project has:
 - No production deployment (theoretical + test-verified).
 - No LLM in the loop (deterministic only, as of V0.5).
 - Zero budget (which also means zero influence).
+- **One external dependency** (see below).
 
 We declare these limits UP FRONT, in every version report.
+
+### Known dependencies
+
+The project has exactly ONE external dependency:
+
+- **cryptography** — used only in `seed/root.py` for
+  Ed25519 key generation, signing, and verification.
+
+All other code uses the Python standard library only.
+
+The original `CHARTER.md` stated "zero external
+dependencies." That was the aspiration. Reality is
+"one dependency, deliberately minimal, and fully
+accounted for."
+
+This correction was made on 2026-09-23 after an audit
+triggered by preparing a GitHub Actions workflow. See
+`docs/JOURNEY.md` J-0.8.8 for the full context.
+
+Any future claim of "zero-dependency" in this project
+must be replaced by "minimal-dependency" or by an
+explicitly qualified statement.
 
 ## 7. Comparison with existing work — mandatory
 
