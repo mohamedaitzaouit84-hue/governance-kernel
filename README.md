@@ -1,5 +1,7 @@
 # Governance Kernel
 
+[![Test Suite](https://github.com/mohamedaitzaouit84-hue/governance-kernel/actions/workflows/test.yml/badge.svg)](https://github.com/mohamedaitzaouit84-hue/governance-kernel/actions/workflows/test.yml)
+
 **A minimal-dependency governance kernel for AI agents.**
 Built on a single Android phone, with zero budget.
 Six gates closed. 54/54 attacks blocked. PRI = 1.0000.

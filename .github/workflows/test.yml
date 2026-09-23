@@ -1,0 +1,47 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the single dependency
+        run: |
+          python -m pip install --upgrade pip
+          pip install cryptography
+
+      - name: Bootstrap (fresh clone support)
+        run: python bootstrap.py
+
+      - name: Run V0.4 (attack suite)
+        run: python tests/gate_v04/run_all.py
+
+      - name: Run V0.5 (5 gates)
+        run: python tests/gate_v05/run_all.py
+
+      - name: Run V0.6 (5 gates)
+        run: python tests/gate_v06/run_all.py
+
+      - name: Run V0.7 (19 gates)
+        run: python tests/gate_v07/run_all.py
