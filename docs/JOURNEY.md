@@ -933,3 +933,73 @@ The project now has evidence that:
 - GitHub Actions: V0.5 partial (branches missing)
 
 The gap is now precisely identified and fixable.
+
+
+## J-0.8.11 — CI shallow clone hides v0.6-closed tag
+
+**Discovered**: 2026-09-23, GitHub Actions run 35847336154,
+  after v0.7.12 (commit 1198b37) pushed.
+
+**Symptom**: V0.7 gates: 17/19 closed.
+  - G0.34 V0.5 Untouched:   FAILED (could not diff)
+  - G0.ZZ Kernel Untouched: FAILED
+
+**Error in CI log**:
+    ERROR running git diff: fatal: ambiguous argument
+    'v0.6-closed': unknown revision or path not in the
+    working tree.
+    G0.34: FAILED (could not diff)
+
+**Root cause**:
+  .github/workflows/test.yml uses actions/checkout@v4 with
+  no `fetch-depth` override. Default is fetch-depth: 1
+  (shallow clone without tags). Gates G0.34 and G0.ZZ both
+  run `git diff v0.6-closed HEAD` to verify protected files
+  were not modified. In CI, the tag does not exist locally,
+  so git diff fails.
+
+**Why it was hidden**:
+  - Termux: full clone, all tags present. 19/19.
+  - Colab:  full clone / manual setup preserves history.
+    19/19.
+  - CI:     shallow clone (fetch-depth: 1), tags absent.
+    Never reached before because until v0.7.12, V0.7 tests
+    failed earlier (branches missing → V0.5 partial →
+    downstream gates never exercised).
+
+  Pattern "each fix reveals a deeper problem":
+  fixing bootstrap (J-0.8.10) allowed V0.7 to run further,
+  exposing the shallow-clone gap.
+
+**Impact**: HIGH for reproducibility claim.
+  - Claim "19/19 on 3 environments" is currently FALSE.
+  - Reality: 19/19 on Termux + Colab; 17/19 on CI.
+  - Fixable with 2 lines in CI config.
+
+**Fix plan** (V0.7.13):
+
+Modify .github/workflows/test.yml Checkout step:
+    with:
+      fetch-depth: 0
+      fetch-tags: true
+
+Alternative REJECTED: make G0.34 / G0.ZZ gracefully skip
+when the tag is absent. These are real audit gates
+(V0.5 byte-identical check). Weakening them to accommodate
+a CI misconfiguration is backwards.
+
+No kernel code touched. No gate logic touched.
+
+**Cost estimate**: 10 minutes.
+
+**Status**: documented. Fix planned for V0.7.13.
+
+**Scientific note**: this is the ELEVENTH finding in the
+J-0.8.x series. The chain of 11 findings in ~24 hours is
+itself the strongest evidence that the reproducibility
+claim required multi-environment testing.
+
+Correction to prior claims:
+  - Earlier: "19/19 on 3 environments" -> imprecise.
+  - Now:     "19/19 on Termux + Colab; CI pending V0.7.13."
+
