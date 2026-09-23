@@ -992,7 +992,18 @@ No kernel code touched. No gate logic touched.
 
 **Cost estimate**: 10 minutes.
 
-**Status**: documented. Fix planned for V0.7.13.
+**Status**: CLOSED (2026-09-23).
+
+  Verified on GitHub Actions run 35849426756
+  (commit d2fc322): V0.7 gates 19/19 closed.
+  V0.5 gates 5/5 closed. Full matrix green:
+    - Termux:           5/5 + 19/19
+    - GitHub Actions:   5/5 + 19/19
+    - Colab:            5/5 + 19/19 (pre-v0.7.13)
+
+  Repro claim updated: "19/19 on 3 environments" is
+  now TRUE (was FALSE at the time this finding was
+  discovered).
 
 **Scientific note**: this is the ELEVENTH finding in the
 J-0.8.x series. The chain of 11 findings in ~24 hours is
