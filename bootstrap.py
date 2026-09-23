@@ -100,6 +100,43 @@ def step_subjects():
         print("  [SKIP] all subjects already registered")
 
 
+def step_register_branches():
+    """Register the three default V0.5 agents as branches.
+
+    Fresh clones have no branches/registry.jsonl (it is in
+    .gitignore). This step reuses agents/register_agents.py
+    to register FileAgent, ComputeAgent, QueryAgent with the
+    owner's signature.
+
+    Idempotent: already-registered branches are skipped.
+    """
+    import subprocess
+    script = REPO / "agents" / "register_agents.py"
+    if not script.exists():
+        print("  [SKIP] agents/register_agents.py not found")
+        return
+
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode == 0:
+        # Count "REGISTERED" vs "SKIPPED"
+        registered = result.stdout.count("REGISTERED")
+        skipped = result.stdout.count("SKIPPED")
+        print("  [OK  ] branches: {} registered, {} skipped".format(
+            registered, skipped))
+    else:
+        print("  [WARN] register_agents.py exited {}".format(
+            result.returncode))
+        # Show last lines for debugging
+        for line in (result.stdout + result.stderr).splitlines()[-3:]:
+            print("         " + line)
+
+
 def step_policy_signature():
     """Re-sign default.yaml if signature is invalid.
 
@@ -149,6 +186,7 @@ def main():
     step_root_state()
     step_audit_log()
     step_subjects()
+    step_register_branches()
     step_policy_signature()
 
     print()
