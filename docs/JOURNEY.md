@@ -802,3 +802,134 @@ a GitHub Actions workflow) is what reveals them.
 The original claim "zero-dependency" was aspirational.
 Reality is "one-dependency, deliberately minimal, and
 fully accounted for".
+
+---
+
+## J-0.8.9 — PyYAML is a second dependency (2026-09-23)
+
+**What happened**: on the first GitHub Actions run, the
+V0.5 job failed with:
+
+    File "policy/policy_store.py", line 4, in <module>
+        import yaml
+    ModuleNotFoundError: No module named 'yaml'
+
+The workflow installed `cryptography` but NOT `pyyaml`.
+
+**Root cause**: `policy/policy_store.py` imports the
+third-party package `yaml` (PyYAML). This is a second
+external dependency, in addition to `cryptography`.
+
+**Impact**: MEDIUM-HIGH. J-0.8.8 stated the project has
+"exactly ONE external dependency". This was inaccurate.
+The true count is TWO (and there may be more).
+
+**Why it was hidden**: on Termux and Colab, `pyyaml` is
+pre-installed. Like `cryptography`, it was invisible
+until a truly clean environment tested it.
+
+**Fix plan** (V0.7.11):
+
+1. Document this in JOURNEY.md (this entry).
+2. Update .github/workflows/test.yml:
+   pip install cryptography pyyaml
+3. Update README.md: 2 dependencies, list them explicitly
+4. Update docs/OPENING.md: known dependencies now lists 2
+5. Audit entire codebase for other third-party imports
+
+**Dependencies now known**:
+- cryptography (Ed25519 in seed/root.py)
+- pyyaml (YAML parsing in policy/policy_store.py)
+
+**Audit method**: grep for imports that are not stdlib.
+
+**Cost estimate**: 1-2 hours (includes full audit).
+
+**Status**: documented. Fix planned for V0.7.11.
+
+**Scientific note**: this is the NINTH finding in the
+J-0.8.x series. The pattern continues: a claim ("1
+dependency") that felt true in two environments (Termux,
+Colab) was proven false by a third (GitHub Actions).
+
+This validates the decision to add CI. The only way to
+find this class of defect is to test in a truly clean
+environment. Each environment reveals what the previous
+ones hid.
+
+---
+
+## J-0.8.10 — branches/registry.jsonl is not bootstrapped (2026-09-23)
+
+**What happened**: second GitHub Actions run (after
+V0.7.11 fix). V0.5 now reaches G0.13, but G0.13 fails:
+
+    FAIL: file_agent_1 not registered
+    FAIL: compute_agent_1 not registered
+    FAIL: query_agent_1 not registered
+    G0.13: 0/3 registered and verified
+    V0.5 gates: 4/5 closed
+
+G0.14, G0.15, G0.16, G0.17 all pass. Only G0.13 fails.
+
+**Root cause**: `branches/registry.jsonl` is listed in
+.gitignore (line: `branches/registry.jsonl`). On a fresh
+clone, this file does not exist. No branches are
+registered. G0.13 fails.
+
+**Why it was hidden**:
+- On Termux, `branches/registry.jsonl` exists since V0.1.
+- On Colab, `bootstrap.py` did not register branches
+  either — but the file may have been committed
+  accidentally at some point, or the test on Colab
+  passed for a different reason.
+- Actually: on Colab, `bootstrap.py` writes to `logs/`,
+  `identity/`, `authorization/subjects.json`, and the
+  policy signature. It does NOT touch `branches/`.
+  The G0.13 test on Colab was never seen failing because
+  previous Colab runs may have been on checkouts that
+  included a stale branches file, or the tests were not
+  run in the exact same state.
+- Result: this defect was invisible on Termux and
+  appeared only on GitHub Actions, where the checkout
+  is guaranteed clean.
+
+**Impact**: HIGH. Fresh clones cannot run V0.5 fully
+without manual registration.
+
+**Fix plan** (V0.7.12):
+
+Update `bootstrap.py` to register the three default
+branches automatically, AFTER `step_subjects()`.
+
+New step: `step_register_branches()`
+
+Logic:
+  - Import agents.register_agents
+  - Call its main registration logic
+  - Print a summary line
+
+This reuses the existing V0.5 logic (no duplication).
+It does NOT modify any V0.1-V0.5 code.
+
+Alternatively, `run_all.py` could call
+`agents/register_agents.py` before V0.5 tests. But
+putting it in `bootstrap.py` is cleaner: bootstrap
+becomes the single source of "fresh clone setup".
+
+**Cost estimate**: 30 minutes.
+
+**Status**: documented. Fix planned for V0.7.12.
+
+**Scientific note**: this is the TENTH finding in the
+J-0.8.x series. The pattern remains consistent: each
+external environment reveals what previous environments
+hid. GitHub Actions is the strictest environment so far
+because it starts from a truly clean checkout.
+
+The project now has evidence that:
+- Termux: 19/19 (manual setup over time)
+- Colab: 19/19 (after bootstrap)
+- GitHub Actions: V0.5 partial (branches missing)
+
+The gap is now precisely identified and fixable.
