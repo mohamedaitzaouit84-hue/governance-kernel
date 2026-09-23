@@ -25,7 +25,7 @@ A working implementation of governance-first architecture:
 - **Pre-registered thresholds.** Attack success rates are declared
   before running tests. No post-hoc adjustment.
 - **Failures are logged.** See docs/JOURNEY.md. Nothing is hidden.
-- **One external dependency.** cryptography (Ed25519), for the trust anchor only. Everything else is Python standard library.
+- **Two external dependencies.** cryptography (Ed25519, trust anchor) and pyyaml (YAML policy parsing). Everything else is Python standard library.
 
 Read docs/OPENING.md first — it defines what this project does
 and does NOT claim.
@@ -149,7 +149,7 @@ Untested hypotheses are listed in docs/PATTERNS.md.
     # Run V0.5 gate suite
     python tests/gate_v05/run_all.py
 
-Requires Python 3.9+ and one external package: cryptography (used only by seed/root.py for Ed25519). Install with: pip install cryptography
+Requires Python 3.9+ and two external packages: cryptography (Ed25519, used by seed/root.py) and pyyaml (YAML parsing, used by policy/policy_store.py). Install with: pip install cryptography pyyaml
 Total runtime: under 30 seconds on a phone.
 
 ---

@@ -74,21 +74,24 @@ We declare these limits UP FRONT, in every version report.
 
 ### Known dependencies
 
-The project has exactly ONE external dependency:
+The project has exactly TWO external dependencies:
 
-- **cryptography** — used only in `seed/root.py` for
-  Ed25519 key generation, signing, and verification.
+- **cryptography** — used in `seed/root.py` for Ed25519
+  key generation, signing, and verification.
+- **pyyaml** — used in `policy/policy_store.py` for
+  parsing the signed YAML policy files.
 
 All other code uses the Python standard library only.
 
 The original `CHARTER.md` stated "zero external
 dependencies." That was the aspiration. Reality is
-"one dependency, deliberately minimal, and fully
+"two dependencies, deliberately minimal, and fully
 accounted for."
 
-This correction was made on 2026-09-23 after an audit
-triggered by preparing a GitHub Actions workflow. See
-`docs/JOURNEY.md` J-0.8.8 for the full context.
+First correction: 2026-09-23 (J-0.8.8) — discovered
+cryptography.
+Second correction: 2026-09-23 (J-0.8.9) — discovered
+pyyaml via the first GitHub Actions run.
 
 Any future claim of "zero-dependency" in this project
 must be replaced by "minimal-dependency" or by an
