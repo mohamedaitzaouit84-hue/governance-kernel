@@ -743,3 +743,62 @@ gap. The pattern continues: each fix exposes a new
 assumption that only external testing reveals. The
 "fresh clone" path has been a cascade of hidden
 assumptions about local state.
+
+---
+
+## J-0.8.8 — The "Zero-Dependency" claim is inaccurate (2026-09-23)
+
+**What happened**: while preparing a GitHub Actions workflow,
+I checked exactly which packages are imported across the
+codebase. Found:
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+
+in seed/root.py. `cryptography` is NOT part of the Python
+standard library. It is a third-party C-extension package.
+
+**Impact**: MEDIUM-HIGH. The project has claimed
+"zero external dependencies" and "Python standard library
+only" in multiple places (README.md, OPENING.md, CHARTER.md,
+FREEZE files, release notes). This claim is not accurate.
+
+Truth: the project has ONE external dependency
+(`cryptography`), not zero.
+
+**Why it was hidden**:
+- On Termux, `cryptography` ships with the Python install.
+- On Google Colab, `cryptography` is pre-installed.
+- The project NEVER had to run `pip install cryptography`
+  on any environment tested so far.
+- Result: "zero dependencies" FELT true.
+
+**Reality check**: on a bare Python install (e.g. GitHub
+Actions ubuntu-latest with actions/setup-python), running
+`python audit/integrity.py` would fail with
+`ModuleNotFoundError: No module named 'cryptography'`.
+
+**Fix plan** (documentation-only, no code change):
+
+1. Document this in JOURNEY.md (this entry).
+2. Update README.md: replace "Zero external dependencies"
+   with an honest statement about the single dependency.
+3. Update docs/OPENING.md: add a "Known dependencies"
+   section under section 6 (Admission of limits).
+4. Do NOT modify CHARTER.md — it is a founding document.
+   Instead, add a note in OPENING.md that references
+   the CHARTER's original aspiration.
+
+**Cost estimate**: 30 minutes (documentation only).
+
+**Status**: documented. Awaiting correction pass.
+
+**Scientific note**: this is the EIGHTH finding in the
+reproducibility/correctness series. The pattern continues:
+even a well-documented project can carry claims that are
+subtly false. External scrutiny (in this case, imagining
+a GitHub Actions workflow) is what reveals them.
+
+The original claim "zero-dependency" was aspirational.
+Reality is "one-dependency, deliberately minimal, and
+fully accounted for".
