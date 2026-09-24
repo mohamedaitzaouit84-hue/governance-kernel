@@ -1014,3 +1014,65 @@ Correction to prior claims:
   - Earlier: "19/19 on 3 environments" -> imprecise.
   - Now:     "19/19 on Termux + Colab; CI pending V0.7.13."
 
+
+## J-0.8.14 — consensus/journal.jsonl grows unbounded
+
+**Discovered**: 2026-09-23, Termux (during V0.7 runs)
+**Class**: Resource leak / operational hygiene
+
+**Symptom**:
+  consensus/journal.jsonl = 23,098,288 bytes (23 MB)
+                          92,493 lines
+  Last modified: 2026-09-23 10:32
+
+**Root cause**:
+  - agents/multi/consensus.py:32
+  - agents/multi/communication.py:21
+  - agents/multi/coordinator.py:26
+    All three define:
+      _JOURNAL_PATH = Path(__file__).parent.parent.parent
+                      / "consensus" / "journal.jsonl"
+    Each writes to the same file. No rotation logic exists
+    (grep for rotate/max_size/max_bytes/truncate returns nothing).
+
+**Why it was hidden**:
+  - On Termux: file grows silently across runs. No failure
+    until filesystem pressure.
+  - On CI/Colab: fresh clone. File never exists. Never grows.
+  - No test asserts journal size.
+  - No alert on growth.
+
+**Impact**: MEDIUM.
+  - Local Termux only: 23 MB after ~1 month. Linear growth.
+  - CI/Colab: unaffected (fresh clones).
+  - Risk of concurrent writes if 3 modules append simultaneously
+    in a multi-process setup (not currently tested).
+  - git add . previously would have pushed 23 MB — now
+    mitigated by .gitignore (commit b3ad05c).
+
+**Fix plan** (V0.7.14):
+
+Option A — rotation in consensus module:
+  - Add rotation when file exceeds N lines (e.g. 10,000)
+  - Rotate to journal.jsonl.1, .2, ...
+  - Keep max K archives
+
+Option B — cap + truncate:
+  - Truncate to last N lines when file exceeds threshold
+  - Simpler but loses history
+
+Option C — move to per-run file:
+  - consensus/journal-<timestamp>.jsonl
+  - Requires external cleanup
+
+Recommended: A (rotation) for V0.8+; C for testing.
+Decision deferred.
+
+**Cost estimate**: 2 hours.
+
+**Status**: PENDING. Documented only.
+
+**Note**: The .gitignore fix (commit b3ad05c) prevented the
+immediate risk of pushing 23 MB. But the underlying growth
+problem remains on any long-running Termux instance.
+
