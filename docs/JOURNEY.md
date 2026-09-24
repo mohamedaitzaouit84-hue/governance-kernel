@@ -1146,3 +1146,74 @@ fresh-clone simulation, the registry contains exactly
 memory). No cleanup of Termux's local mem_branch was
 performed; it was removed automatically by the simulation.
 
+
+## J-0.8.28 — G0.ZZ forbids modifying authorization/, but bootstrap.py must modify authorization/subjects.json
+
+**Discovered**: 2026-09-24, GitHub Actions run 36025304378
+**Class**: Scope Lock conflict
+**Related**: J-0.8.21 (bootstrap memory branch)
+
+**Symptom**:
+  After commit 0404d22 (v0.7.14, J-0.8.21 fix), CI fails:
+    G0.ZZ Kernel Untouched    FAILED
+    V0.7 gates: 18/19 closed
+  Local Termux: G0.ZZ returns exit code 1 after the fix.
+
+**Root cause**:
+  Two requirements in direct conflict:
+
+  1. FREEZE_v0.7.md Section 0 lists "authorization/" as protected.
+     G0.ZZ enforces this via `git diff v0.6-closed HEAD`.
+
+  2. bootstrap.py (v0.7.14, from J-0.8.21) must add
+     "memory_system" to authorization/subjects.json so that
+     memory/gate.py default subject resolution works on
+     fresh clones.
+
+  Result: bootstrap.py modifies a protected file -> G0.ZZ fails.
+
+  The conflict existed implicitly since V0.5 (bootstrap.py has
+  always managed subjects.json) but was hidden because:
+  - Up to v0.7.13, subjects.json contained only pre-V0.5 subjects
+    (owner, system, agents). These were committed once in V0.4.1
+    (cda932d, 1f26943) and never changed since.
+  - V0.7.14 is the first commit to add a new subject after
+    v0.6-closed.
+
+**Why it was hidden**:
+  - G0.ZZ compares v0.6-closed to HEAD.
+  - No subject had been added to subjects.json since V0.4.1.
+  - Therefore the file appeared "untouched" for 3 versions.
+  - v0.7.14's addition of memory_system broke this appearance.
+
+**Impact**: HIGH for CI, MEDIUM for runtime.
+  - CI now fails at V0.7 (18/19 instead of 19/19).
+  - V0.5, V0.6 unaffected.
+  - Termux runs after the fix fail G0.ZZ locally.
+  - The kernel itself is unchanged — only a data file.
+
+**Fix plan** (v0.7.15):
+
+1. Add "authorization/subjects.json" to ALLOWED_EXCEPTIONS in
+   tests/gate_v07/test_g0ZZ_kernel_untouched.py.
+2. Document the deviation in docs/FREEZE_v0.7.md Section 0.
+3. Create docs/FREEZE_v0.7.15.md with the deviation declaration.
+
+The exception is narrow:
+  - ONE file only: authorization/subjects.json
+  - Additive only: new subjects, never removals or edits
+  - Required for bootstrap correctness on fresh clones
+
+**Cost estimate**: 30 minutes.
+
+**Status**: documented. Fix planned for v0.7.15.
+
+**Scientific note**: This is the THIRD scope-lock conflict in the
+J-0.8.x series (after J-0.8.3/J-0.8.5 which required
+ALLOWED_EXCEPTIONS for Path.home files). Each conflict reveals
+that "kernel untouched" is not a binary but a moving boundary
+that must be re-declared whenever a new legitimate need appears.
+The exception mechanism (ALLOWED_EXCEPTIONS) exists precisely
+for this. Without it, no legitimate maintenance would be
+possible after v0.6-closed.
+

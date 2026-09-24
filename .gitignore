@@ -35,3 +35,4 @@ consensus/
 docs/HANDOVER.md.bak_*
 docs/JOURNEY.md.bak_*
 bootstrap.py.bak_*
+*.bak_*

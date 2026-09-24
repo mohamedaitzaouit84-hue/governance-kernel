@@ -79,6 +79,10 @@ ALLOWED_EXCEPTIONS = {
     "seed/root.py",
     # v0.7.7 patch (J-0.8.5): Path Portability phase 2
     "audit/append_only_log.py",
+    # v0.7.15 (J-0.8.28): bootstrap.py adds default subjects
+    # (memory_system) to authorization/subjects.json. Additive
+    # only. Required for fresh-clone correctness (J-0.8.21).
+    "authorization/subjects.json",
     "audit/integrity.py",
     "policy/policy_store.py",
     "authorization/branch_registry.py",

@@ -46,6 +46,10 @@ V0.7 SHALL only add:
     docs/PERFORMANCE_v0.6.md
     docs/GATES_v0.7_report.md
 
+**v0.7.15 exception (J-0.8.28)**:
+    authorization/subjects.json  (additive only — bootstrap.py adds
+    default subjects; see docs/FREEZE_v0.7.15.md)
+
 **Any change to a kernel file → V0.7 FAILED automatically.**
 
 **Verification**: `tests/gate_v07/test_g0ZZ_kernel_untouched.py`
