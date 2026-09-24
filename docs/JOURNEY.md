@@ -1076,3 +1076,73 @@ Decision deferred.
 immediate risk of pushing 23 MB. But the underlying growth
 problem remains on any long-running Termux instance.
 
+
+## J-0.8.21 — bootstrap.py lacks memory branch registration
+
+**Discovered**: 2026-09-23, Colab (extended testing session)
+**Class**: Build reproducibility gap
+**Related**: J-0.8.20 (Gate D needs 3 fixes)
+
+**Symptom**:
+  Fresh clone: `python bootstrap.py` runs successfully,
+  but does not register the `memory` branch.
+  `memory/gate.py` then fails with:
+    RuntimeError: فرع 'memory' غير مسجّل
+  The `memory_system` subject is also missing from
+  `authorization/subjects.json`.
+
+**Root cause**:
+  bootstrap.py registered only:
+  - owner + system + 3 agents (subjects)
+  - file_agent_1, compute_agent_1, query_agent_1 (branches)
+  It did NOT call memory/register_branch.py.
+  It did NOT include memory_system in DEFAULT_SUBJECTS.
+
+  Two layers:
+  1. Missing step: register_memory_branch()
+  2. Missing subject: memory_system (default in memory/gate.py:82)
+
+**Why it was hidden**:
+  - Termux: manual registration performed in V0.2a.
+    registry.jsonl persists across sessions.
+  - CI/Colab: fresh clone, but bootstrap never tested with
+    memory-dependent tests.
+  - No test in V0.4-V0.7 exercises the memory branch.
+
+**Impact**: MEDIUM.
+  - Affects fresh clones (CI, Colab).
+  - Breaks Gate D (tests/gate_d_benchmark.py) entirely.
+  - Does not affect V0.4, V0.5, V0.6, V0.7 (no memory usage).
+
+**Fix plan** (V0.7.14):
+
+1. Add "memory_system" to DEFAULT_SUBJECTS in bootstrap.py
+   (role: system, trust: 0.9).
+2. Add step_register_memory_branch() that:
+   - Checks if "memory" is already registered (idempotent)
+   - Calls memory/register_branch.py as subprocess
+   - Prints [OK  ] or [SKIP] appropriately
+3. Call step_register_memory_branch() in main() between
+   step_register_branches() and step_policy_signature().
+
+**Cost estimate**: 30 minutes.
+
+**Status**: CLOSED (2026-09-24).
+
+  Verified on Termux (idempotent SKIP case) and on
+  simulated fresh clone (registry.jsonl deleted):
+    [OK  ] branches: 3 registered, 0 skipped
+    [OK  ] memory branch registered
+  Result: 4 branches registered (was 3).
+  subjects.json: 9 subjects (was 8).
+  V0.5: 5/5 CLOSED.
+  V0.7: 19/19 CLOSED.
+
+**Side note**: A local-only 'mem_branch' entry (V0.2a,
+2026-09-12) exists in Termux's registry.jsonl. It is not used
+by any code and is not present on fresh clones. After the
+fresh-clone simulation, the registry contains exactly
+4 branches (file_agent_1, compute_agent_1, query_agent_1,
+memory). No cleanup of Termux's local mem_branch was
+performed; it was removed automatically by the simulation.
+

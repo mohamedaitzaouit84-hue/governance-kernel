@@ -32,6 +32,7 @@ import append_only_log as audit
 DEFAULT_SUBJECTS = {
     "owner":            {"role": "owner",            "trust": 1.0},
     "system":           {"role": "system",           "trust": 0.9},
+    "memory_system":    {"role": "system",           "trust": 0.9},
     "agent_high_1":     {"role": "agent_high",       "trust": 0.8},
     "agent_mid_1":      {"role": "agent_mid",        "trust": 0.6},
     "agent_low_1":      {"role": "agent_low",        "trust": 0.3},
@@ -137,6 +138,50 @@ def step_register_branches():
             print("         " + line)
 
 
+def step_register_memory_branch():
+    """Register the 'memory' storage branch.
+
+    Fresh clones have no branches/registry.jsonl (it is in
+    .gitignore). memory/gate.py needs a registered 'memory'
+    branch to authorize memory operations. This step reuses
+    memory/register_branch.py with the owner's signature.
+
+    Idempotent: if 'memory' is already registered, skipped.
+    """
+    import subprocess
+    script = REPO / "memory" / "register_branch.py"
+    if not script.exists():
+        print("  [SKIP] memory/register_branch.py not found")
+        return
+
+    # Check whether 'memory' is already registered
+    try:
+        if str(REPO / "authorization") not in sys.path:
+            sys.path.insert(0, str(REPO / "authorization"))
+        import branch_registry as br
+        branches = br.list_branches()
+        if any(b.get("name") == "memory" for b in branches):
+            print("  [SKIP] memory branch already registered")
+            return
+    except Exception as exc:
+        print("  [WARN] could not check registry: {}".format(exc))
+
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode == 0:
+        print("  [OK  ] memory branch registered")
+    else:
+        print("  [WARN] memory/register_branch.py exited {}".format(
+            result.returncode))
+        for line in (result.stdout + result.stderr).splitlines()[-3:]:
+            print("         " + line)
+
+
 def step_policy_signature():
     """Re-sign default.yaml if signature is invalid.
 
@@ -187,6 +232,7 @@ def main():
     step_audit_log()
     step_subjects()
     step_register_branches()
+    step_register_memory_branch()
     step_policy_signature()
 
     print()

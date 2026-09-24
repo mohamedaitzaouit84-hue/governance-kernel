@@ -33,3 +33,5 @@ memory/data/
 **/__pycache__/
 consensus/
 docs/HANDOVER.md.bak_*
+docs/JOURNEY.md.bak_*
+bootstrap.py.bak_*

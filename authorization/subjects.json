@@ -32,6 +32,10 @@
     "query_agent_1": {
       "role": "query_agent",
       "trust": 0.1
+    },
+    "memory_system": {
+      "role": "system",
+      "trust": 0.9
     }
   }
 }
