@@ -31,3 +31,5 @@ memory/data/
 
 # Python cache
 **/__pycache__/
+consensus/
+docs/HANDOVER.md.bak_*
