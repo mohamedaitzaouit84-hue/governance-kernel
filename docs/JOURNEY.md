@@ -1217,3 +1217,70 @@ The exception mechanism (ALLOWED_EXCEPTIONS) exists precisely
 for this. Without it, no legitimate maintenance would be
 possible after v0.6-closed.
 
+
+## J-0.8.12 — README claims "Six gates closed" with no traceable source
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation staleness
+**Related**: J-0.8.13, J-0.8.17, J-0.8.18
+
+**Symptom**:
+  README.md line 7 stated:
+    "Six gates closed. 54/54 attacks blocked. PRI = 1.0000."
+  The number "Six" was not traceable to any source:
+  - GATES.md documents 10 conceptual gates (Gate 0 to H), not six.
+  - V0.4 has 5 attacks (a1-a5) + __init__.py = 6 files,
+    but "attacks" are not "gates".
+  - V0.5: 5 gates.
+  - V0.6: 5 gates.
+  - V0.7: 19 gates.
+  - Sum V0.5-V0.7 = 29 gates.
+  The claim appeared once in README, never updated after V0.5.
+
+**Root cause**:
+  The line was written during V0.5 era (README last updated
+  2026-09-15, before V0.6 and V0.7). The number "Six" was
+  likely an approximation that was never updated. V0.6 and
+  V0.7 (10 commits since) added no README updates for the
+  status line.
+
+**Why it was hidden**:
+  - No test asserts README content.
+  - CI does not check documentation.
+  - The claim appeared plausible at a glance.
+
+**Impact**: MEDIUM for external credibility.
+  - A reader sees "Six gates" and infers a small project.
+  - Reality: 29 numbered gates across V0.5-V0.7.
+  - Discrepancy: 23 gates unaccounted.
+  - README is the first thing visitors see.
+
+**Fix plan** (this commit):
+
+1. Line 7 rewritten:
+     BEFORE: Six gates closed. 54/54 attacks blocked. PRI = 1.0000.
+     AFTER:  29 gates closed (V0.5-V0.7). 54/54 attacks blocked (V0.4).
+             PRI = 1.0000.
+2. Status table extended with V0.6 and V0.7 rows.
+3. Added "Full V0.7 report" line.
+4. Footer updated to "Last updated: 2026-09-25 — V0.7.15".
+
+Out of scope (separate findings):
+  - README claims "16 architectural patterns" (real: 18).
+  - README references tests/gate_v03/ which does not exist.
+  - README quick start says "cd governance_kernel" (should be
+    "governance-kernel").
+  - README says "Latest DOI (V0.6)" but V0.7 has no DOI yet.
+
+**Cost estimate**: 30 minutes.
+
+**Status**: CLOSED (2026-09-25).
+
+  Committed in v0.7.15 (README update).
+  README now reflects V0.1-V0.7 closure status.
+
+**Scientific note**: 28th finding in the J-0.8.x series.
+It reveals a pattern: README is a "front door" forgotten
+during development. Documentation debt accumulates silently.
+Fix requires discipline of re-checking README after each
+version bump.

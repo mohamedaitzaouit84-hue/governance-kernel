@@ -4,7 +4,8 @@
 
 **A minimal-dependency governance kernel for AI agents.**
 Built on a single Android phone, with zero budget.
-Six gates closed. 54/54 attacks blocked. PRI = 1.0000.
+29 gates closed (V0.5-V0.7). 54/54 attacks blocked (V0.4).
+PRI = 1.0000.
 
 **Latest DOI (V0.6)**: [10.5281/zenodo.22812967](https://doi.org/10.5281/zenodo.22812967)
 **V0.5 DOI**: [10.5281/zenodo.22773365](https://doi.org/10.5281/zenodo.22773365)
@@ -40,9 +41,12 @@ and does NOT claim.
 | V0.2a Memory | CLOSED | 0926b4d |
 | V0.3 Separation | 2/3 gates | 0ad9360 |
 | V0.4 Attacks | CLOSED (PRI = 1.0000) | e67ec7f |
-| **V0.5 Agents** | **CLOSED (5/5 gates)** | 6000b11 |
+| V0.5 Agents | CLOSED (5/5 gates) | 6000b11 |
+| V0.6 Multi-Agent | CLOSED (5/5 gates) | 3cdb44f |
+| V0.7 Red Team + Performance + Real Agents + Delegation | CLOSED (19/19 gates) | 791e419 |
 
 Full V0.5 report: docs/GATES_v0.5_report.md
+Full V0.7 report: docs/GATES_v0.7_report.md
 
 ---
 
@@ -185,4 +189,4 @@ Built on a phone, at zero cost.
 
 ---
 
-*Last updated: 2026-09-15 — V0.5 CLOSED*
+*Last updated: 2026-09-25 — V0.7.15*
