@@ -1284,3 +1284,91 @@ It reveals a pattern: README is a "front door" forgotten
 during development. Documentation debt accumulates silently.
 Fix requires discipline of re-checking README after each
 version bump.
+
+## J-0.8.29 — README claims "16 architectural patterns"; actual count is 18
+
+**Discovered**: 2026-09-25, during J-0.8.12 fix
+**Class**: Documentation staleness
+**Related**: J-0.8.12 (README number traceability)
+
+**Symptom**:
+  README.md line 85 states:
+    "PATTERNS.md 16 architectural patterns"
+  Actual count in docs/PATTERNS.md: 18 patterns
+  (P-L1 to P-L5 = 5, P-Q1 to P-Q13 = 13).
+
+**Root cause**:
+  README was last updated 2026-09-15 (V0.5 era). The count
+  was likely correct then. Two patterns were added after
+  (P-Q12, P-Q13 in V0.7.4), but README never updated.
+
+**Impact**: LOW.
+  - Underreports by 2 patterns.
+  - Appears alongside "Six gates" (now fixed) as further
+    evidence of stale front-matter.
+
+**Fix plan**: change "16" to "18" in README line 85. One word.
+
+**Status**: PENDING. Documented only.
+
+## J-0.8.30 — README architecture tree references non-existent tests/gate_v03/
+
+**Discovered**: 2026-09-25, during J-0.8.12 fix
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.12
+
+**Symptom**:
+  README.md line 100 (Architecture tree) lists:
+    "gate_v03/          G0.7, G0.9"
+  But tests/gate_v03/ does not exist. V0.3 test files are in
+  the repository root:
+    tests_gate_v03_separation_smoke.py
+    tests_gate_v03_six_combinations.py
+  They were never moved to tests/ when later versions created
+  tests/gate_v04/, gate_v05/, gate_v06/, gate_v07/.
+
+**Root cause**:
+  V0.3 (Separation) predates the tests/gate_vN/ convention
+  introduced in V0.4. V0.3 test files remained in the root.
+  README was written with a planned but never-executed move.
+
+**Impact**: LOW.
+  - Visitor may look for tests/gate_v03/ and fail.
+  - Two V0.3 tests are effectively orphaned from the standard
+    test tree.
+
+**Fix plan**:
+  Option A: update README to list the correct root paths.
+  Option B: move the two files into tests/gate_v03/ (requires
+            import path adjustments + G0.ZZ review).
+  Decision deferred.
+
+**Status**: PENDING. Documented only.
+
+## J-0.8.31 — README quick start uses wrong directory name
+
+**Discovered**: 2026-09-25, during J-0.8.12 fix
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.12
+
+**Symptom**:
+  README.md line 141 (Quick start):
+    git clone https://github.com/mohamedaitzaouit84-hue/governance-kernel
+    cd governance_kernel
+  But clone creates directory "governance-kernel" (with hyphen),
+  not "governance_kernel" (with underscore). Following the
+  README verbatim causes "No such file or directory".
+
+**Root cause**:
+  The underscore name "governance_kernel" is the intended Python
+  package name (not yet published as an SDK). The clone directory
+  uses the repository name with a hyphen. README mixed the two.
+
+**Impact**: LOW but annoying.
+  - Copy-pasting the quick start fails on step 2.
+  - First impression for a new user is a broken command.
+
+**Fix plan**: change "cd governance_kernel" to
+  "cd governance-kernel". One character.
+
+**Status**: PENDING. Documented only.
