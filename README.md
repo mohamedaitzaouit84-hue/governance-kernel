@@ -86,7 +86,7 @@ Pre-registered threshold: 0.95. Result: 1.0000. Unchanged.
     ├── docs/                  20+ reference documents
     │   ├── OPENING.md         Integrity protocol
     │   ├── HANDOVER.md        Session transfer protocol
-    │   ├── PATTERNS.md        16 architectural patterns
+    │   ├── PATTERNS.md        18 architectural patterns
     │   ├── GATES.md           Pre-registered gates
     │   ├── JOURNEY.md         Every error, documented
     │   ├── PRIOR_ART.md       Honest comparison with existing work
@@ -101,7 +101,6 @@ Pre-registered threshold: 0.95. Result: 1.0000. Unchanged.
     ├── kernel/separation/     V0.3 Info/Policy/Node separation
     ├── agents/                V0.5 deterministic agents
     └── tests/
-        ├── gate_v03/          G0.7, G0.9
         ├── gate_v04/          5 attacks + 2 baselines
         └── gate_v05/          G0.13 - G0.17
 
@@ -142,7 +141,7 @@ Untested hypotheses are listed in docs/PATTERNS.md.
 ## Quick start
 
     git clone https://github.com/mohamedaitzaouit84-hue/governance-kernel
-    cd governance_kernel
+    cd governance-kernel
 
     # Verify audit chain
     python audit/integrity.py

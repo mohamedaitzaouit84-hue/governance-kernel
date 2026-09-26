@@ -1309,7 +1309,9 @@ version bump.
 
 **Fix plan**: change "16" to "18" in README line 85. One word.
 
-**Status**: PENDING. Documented only.
+**Cost estimate**: 1 minute.
+
+**Status**: CLOSED (2026-09-26). README line 89 now says "18".
 
 ## J-0.8.30 — README architecture tree references non-existent tests/gate_v03/
 
@@ -1341,9 +1343,11 @@ version bump.
   Option A: update README to list the correct root paths.
   Option B: move the two files into tests/gate_v03/ (requires
             import path adjustments + G0.ZZ review).
-  Decision deferred.
 
-**Status**: PENDING. Documented only.
+**Resolution**: Option A adopted. Line removed from README
+  Architecture tree (no tests/gate_v03/ entry).
+
+**Status**: CLOSED (2026-09-26).
 
 ## J-0.8.31 — README quick start uses wrong directory name
 
@@ -1371,7 +1375,9 @@ version bump.
 **Fix plan**: change "cd governance_kernel" to
   "cd governance-kernel". One character.
 
-**Status**: PENDING. Documented only.
+**Cost estimate**: 1 minute.
+
+**Status**: CLOSED (2026-09-26). README line 144 now says "cd governance-kernel".
 
 ## J-0.8.13 — HANDOVER claims "1 dependency"; code imports 2
 
@@ -1633,3 +1639,4 @@ already resolved by a later action. All three point to the
 same lesson: variable numbers in documents become stale.
 The HANDOVER rewrite eliminated them; only the historical
 records remain, and those are accurate in their context.
+
