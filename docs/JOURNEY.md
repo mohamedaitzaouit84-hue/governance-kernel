@@ -1640,3 +1640,99 @@ same lesson: variable numbers in documents become stale.
 The HANDOVER rewrite eliminated them; only the historical
 records remain, and those are accurate in their context.
 
+
+## J-0.8.32 — Flat imports prevent SDK / pip install
+
+**Discovered**: 2026-09-26, SDK test on Colab
+**Class**: Architecture / Package structure
+**Related**: SDK roadmap (ADDENDUM 2026-09-23)
+
+**Symptom**:
+  After `pip install .` succeeds (wheel built, installed
+  to site-packages), importing modules fails:
+
+    $ python -c "import authorization"
+    ModuleNotFoundError: No module named 'authorization'
+
+    $ python -c "from agents.multi.coordinator_v2 import CoordinatorV2"
+    File "site-packages/agents/base_agent.py", line 24
+      import governed_action_v05 as governed_action
+    ModuleNotFoundError: No module named 'governed_action_v05'
+
+  71 flat imports across the codebase rely on sys.path
+  manipulation performed only by:
+    - bootstrap.py
+    - tests/gate_v07/run_all.py
+
+  After pip install, no entry point manipulates sys.path.
+  Every flat import fails.
+
+**Examples of flat imports**:
+  agents/register_agents.py:23: import branch_registry
+  agents/register_agents.py:24: import root
+  agents/register_agents.py:25: import append_only_log
+  agents/base_agent.py:24:      import governed_action_v05
+  agents/base_agent.py:25:      import kill_switch
+  agents/base_agent.py:26:      import append_only_log
+  seed/genesis.py:5:            import root
+  policy/policy_engine.py:6:    import policy_store
+  policy/policy_engine.py:7:    import subject_registry
+  memory/gate.py:18:            import kill_switch
+  memory/gate.py:21:            import branch_registry
+  memory/semantic/graph.py:26:  import gate
+  ... (71 total)
+
+**Root cause**:
+  The project has always been run from its repository root.
+  bootstrap.py and tests/gate_v07/run_all.py do:
+    sys.path.insert(0, str(REPO / "seed"))
+    sys.path.insert(0, str(REPO / "audit"))
+    sys.path.insert(0, str(REPO / "authorization"))
+  This makes `import kill_switch` work (flat import).
+  After pip install, these sys.path entries do not exist.
+
+**Why it was hidden**:
+  - All tests (Termux, CI, Colab) clone the repository and
+    run from inside it.
+  - SDK was never tested.
+  - pip install . succeeded (wheel built) — the build
+    step does not exercise imports.
+  - The failure appears only when importing after install.
+
+**Impact**: HIGH for SDK / packaging.
+  - Blocks publishing on PyPI.
+  - Blocks `pip install governance-kernel`.
+  - Blocks any use outside the repository.
+  - Does NOT affect V0.4-V0.7 (they run from repo).
+  - Does NOT affect CI (runs from repo).
+  - Does NOT affect Termux (runs from repo).
+
+**Fix plan** (V0.7.16):
+
+Option A — Refactor imports (cleanest):
+  Change all 71 flat imports:
+    BEFORE: import kill_switch
+    AFTER:  from control import kill_switch
+  Requires FREEZE_v0.7.16 (touches protected files).
+  Time: 3-4 days.
+
+Option B — Bootstrap sys.path in package __init__:
+  Add governance_kernel/__init__.py that manipulates sys.path
+  before submodules import.
+  Time: 1-2 days. Hack, but works.
+
+Option C — Wrapper package:
+  Create governance_kernel/ with re-exports.
+  Time: 2-3 days.
+
+Recommended: Option A (cleanest for SDK).
+
+**Cost estimate**: 3-4 days (Option A).
+
+**Status**: PENDING. Documented only.
+
+**Scientific note**: This is the 20th finding in the
+J-0.8.x series. It reveals a class of problems invisible
+until a specific mode is tested (import-after-install).
+The lesson: testing "from inside the repo" is not the
+same as testing "as an SDK".
