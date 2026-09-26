@@ -1428,3 +1428,76 @@ already-resolved by the chain J-0.8.8 -> J-0.8.9 ->
 v0.7.11 -> HANDOVER rewrite. It demonstrates that
 finding lists can lag behind reality. Periodic
 re-verification prevents stale findings.
+
+## J-0.8.16 — GATES.md application table stops at V0.3
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation staleness
+**Related**: J-0.8.12 (README), J-0.8.13 (dependency count)
+
+**Symptom**:
+  docs/GATES.md documents 10 conceptual gates
+  (Gate 0 -> Gate H) with an application table:
+
+    | Gate  | V0.1 | V0.2 | V0.3 |
+    | Gate 0|  yes | req  | req  |
+    ...
+
+  The table stops at V0.3. No V0.4, V0.5, V0.6, V0.7 rows.
+
+**Root cause**:
+  V0.1 -> V0.3 used the Gate 0 -> H system (10 named gates).
+  Starting with V0.4, the project switched to numbered gates
+  (G0.13 -> G0.17 for V0.5, etc.). GATES.md was never updated
+  to reflect the new system.
+
+  Two gate systems now coexist:
+  - Gate 0 -> H: conceptual, V0.1 -> V0.3 (documented in
+    GATES.md)
+  - G0.x: numbered, V0.4 -> V0.7 (documented in
+    tests/gate_v0X/run_all.py and docs/GATES_v0.X_report.md)
+
+**Why it was hidden**:
+  - GATES.md is referenced by FREEZE_v0.2 and FREEZE_v0.3
+    only. No post-V0.3 document references it.
+  - The new system (G0.x) has its own documentation.
+  - No test asserts GATES.md content.
+
+**Impact**: MEDIUM for external readers.
+  - A visitor reading GATES.md sees only V0.1 -> V0.3.
+  - May infer the project stopped at V0.3.
+  - The actual gate count (29) is in README and
+    GATES_v0.X_report.md, not in GATES.md.
+
+**Fix plan** (this commit):
+
+Add a new section at the end of GATES.md:
+
+    ## The New System (V0.4 -> V0.7)
+
+    Starting with V0.4, Gate 0 -> H was replaced with
+    numbered gates G0.x. The table above applies to
+    V0.1 -> V0.3 only.
+
+    [table of V0.4 -> V0.7 gates]
+
+    Full documentation:
+      tests/gate_v04/run_all.py
+      tests/gate_v05/run_all.py
+      ...
+      docs/GATES_v0.5_report.md
+      ...
+
+This preserves GATES.md as a historical document while
+clarifying the current state for readers.
+
+**Cost estimate**: 15 minutes.
+
+**Status**: documented. Fix planned for this commit.
+
+**Scientific note**: This is another example of
+"documentation drift" (see J-0.8.12). When a project
+changes its internal methodology, old documents that
+remain in the repo become misleading. The fix is not
+to rewrite them but to add a bridge that points to
+the new reality.
