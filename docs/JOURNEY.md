@@ -1501,3 +1501,135 @@ changes its internal methodology, old documents that
 remain in the repo become misleading. The fix is not
 to rewrite them but to add a bridge that points to
 the new reality.
+
+## J-0.8.17 — HANDOVER code-line count (5,500) vs reality (9,218)
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.18 (findings count), J-0.8.12 (README)
+
+**Symptom**:
+  Original HANDOVER (pre-2026-09-23) stated:
+    "~5,500 code lines"
+  Actual count via:
+    find . -name "*.py" -not -path "./.git/*" | xargs wc -l
+  Result: 9,218 lines (2026-09-23).
+  Underreport: ~3,700 lines (67% discrepancy).
+
+**Root cause**:
+  The "5,500" figure was written during an early version
+  and never updated. It may have counted only "logic lines"
+  (excluding tests/) or been an approximation. The actual
+  count includes tests/ (which is the largest single
+  directory).
+
+  Breakdown (2026-09-26):
+    tests/         4,618
+    agents/        1,841
+    memory/          990
+    authorization/   377
+    kernel/          354
+    audit/           341
+    root *.py        420
+    control/         126
+    policy/          110
+    seed/             91
+    tools/             0
+    -----
+    Total:         9,268
+
+**Why it was hidden**:
+  - No test asserts code size.
+  - The original number was plausible when the project
+    was smaller.
+  - External review (listing all .py files) revealed
+    the gap.
+
+**Impact**: LOW.
+  - HANDOVER was rewritten 2026-09-23 (8eaccc9) without
+    the "5,500" claim. The variable number was removed
+    deliberately (rule: HANDOVER carries no variable
+    numbers).
+  - The number only appears in pending-findings list
+    (as documentation) and in ADDENDUM_2026-09-23
+    (historical record).
+
+**Status**: CLOSED (2026-09-26).
+
+  The original claim is not present in the current
+  HANDOVER. Actual count (9,268 as of 2026-09-26) is
+  verifiable via wc -l. The +50 difference since
+  2026-09-23 is explained:
+    - bootstrap.py: +46 (v0.7.14 memory branch)
+    - test_g0ZZ_kernel_untouched.py: +4 (v0.7.15)
+
+**Cost estimate**: 0 (verified, no fix required).
+
+**Scientific note**: This is the second finding in the
+J-0.8.x series (after J-0.8.13) that was already
+resolved by a later action. The HANDOVER rewrite
+(8eaccc9) eliminated all variable numbers from
+HANDOVER. What remained is documentation of the
+finding itself. Periodic re-verification (this entry)
+confirms the resolution.
+
+## J-0.8.18 — HANDOVER findings count ("14") vs actual (18+)
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.17 (code-line count), J-0.8.12 (README)
+
+**Symptom**:
+  Original HANDOVER (pre-2026-09-23) stated:
+    "14 findings موثقة (J-0.6.1 to J-0.8.8)"
+  Actual heading count in docs/JOURNEY.md at that time:
+    J-0.6.x: 2
+    J-0.7.x: 6
+    J-0.8.x: 10
+    -----
+    Total:   18 headings
+  Not 14.
+
+**Root cause**:
+  The "14" figure was likely an approximation written when
+  fewer findings existed. New findings (J-0.8.9 onward) were
+  added without updating the count. The original HANDOVER
+  was not re-verified after each session.
+
+**Why it was hidden**:
+  - No test asserts JOURNEY heading count.
+  - The HANDOVER summary looked plausible at a glance.
+  - External review (grep -c "^## J-") revealed the gap.
+
+**Impact**: LOW.
+  - HANDOVER was rewritten 2026-09-23 (8eaccc9) without
+    the "14" claim.
+  - The number appears only in:
+    - pending-findings list (documentation)
+    - ADDENDUM_2026-09-23 (historical record)
+    - ADDENDUM_2026-09-24 ("14 findings pending" as of that
+      session's date — accurate historically)
+
+**Status**: CLOSED (2026-09-26).
+
+  Current heading count (2026-09-26):
+    J-0.6.x: 2
+    J-0.7.x: 6
+    J-0.8.x: 20
+    -----
+    Total:   28 headings
+  Verified via: grep -c "^## J-" docs/JOURNEY.md
+
+  Note: ADDENDUM_2026-09-24 states "14 findings pending" as
+  of 2026-09-24. This was accurate on that date. ADDENDUMs
+  are historical session records and are not retroactively
+  updated.
+
+**Cost estimate**: 0 (verified, no fix required).
+
+**Scientific note**: This is the third finding in the
+J-0.8.x series (after J-0.8.13 and J-0.8.17) that was
+already resolved by a later action. All three point to the
+same lesson: variable numbers in documents become stale.
+The HANDOVER rewrite eliminated them; only the historical
+records remain, and those are accurate in their context.
