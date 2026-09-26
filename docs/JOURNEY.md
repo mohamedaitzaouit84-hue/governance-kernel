@@ -1372,3 +1372,59 @@ version bump.
   "cd governance-kernel". One character.
 
 **Status**: PENDING. Documented only.
+
+## J-0.8.13 — HANDOVER claims "1 dependency"; code imports 2
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation staleness
+**Related**: J-0.8.8 (zero-dependency), J-0.8.9 (PyYAML)
+
+**Symptom**:
+  HANDOVER (original, pre-2026-09-23) stated:
+    "1 dependency (cryptography, for Ed25519)"
+  Code imports:
+    - cryptography (in seed/root.py)
+    - pyyaml (in policy/policy_store.py,
+              authorization/policy_extension.py)
+  Total: 2 external dependencies, not 1.
+
+**Root cause**:
+  The original count missed pyyaml. J-0.8.8 fixed
+  "zero" to "one" (cryptography). J-0.8.9 fixed
+  "one" to "two" (adding pyyaml).
+
+**Why it was hidden**:
+  - pyyaml was installed alongside cryptography in
+    every environment tested (Termux, Colab, CI).
+  - No test isolated which package was needed.
+  - The original count was never automated.
+
+**Impact**: LOW.
+  - README was fixed by v0.7.11 (2 dependencies).
+  - HANDOVER was rewritten 2026-09-23 with correct
+    count (2 dependencies).
+  - No active claim of "1 dependency" remains in
+    user-facing documentation.
+
+**Status**: CLOSED (2026-09-26). Verified no active
+inaccurate claims.
+
+  Remaining mentions of "single dependency" are
+  historical:
+  - docs/FREEZE_v0.7.10.md:63 — written 2026-09-23
+    before v0.7.11 (PyYAML correction). Frozen
+    documents are immutable.
+  - docs/JOURNEY.md:785 — text of J-0.8.8, written
+    before J-0.8.9 discovered pyyaml. Historical
+    record.
+
+  Both are correct in their historical context.
+  No edits needed.
+
+**Cost estimate**: 0 (verified, no fix required).
+
+**Scientific note**: This finding turned out to be
+already-resolved by the chain J-0.8.8 -> J-0.8.9 ->
+v0.7.11 -> HANDOVER rewrite. It demonstrates that
+finding lists can lag behind reality. Periodic
+re-verification prevents stale findings.
