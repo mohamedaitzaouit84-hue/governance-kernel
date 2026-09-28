@@ -2050,3 +2050,85 @@ without code change. The pattern is: a plan document
 but the code evolves differently. The fix is not to
 rewrite the document but to acknowledge it as a
 snapshot of intent.
+
+## J-0.8.25 — Two test files in repo root (V0.3 tests)
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: File organization inconsistency
+**Related**: J-0.8.26 (V0.3 not in CI), J-0.8.30 (README references)
+
+**Symptom**:
+  Two V0.3 test files exist in the repository root:
+
+    tests_gate_v03_separation_smoke.py    (2,189 bytes)
+    tests_gate_v03_six_combinations.py    (3,371 bytes)
+
+  Meanwhile a directory tests/gate_v03/ also exists with
+  five V0.3-era tests:
+
+    tests/gate_v03/
+    ├── g07_policy_separation.py
+    ├── g09_repeatability_v2.py
+    ├── g09_repeatability_v3.py
+    ├── g09_statistical_repeatability.py
+    └── g11_counterfactual.py
+
+  So V0.3 tests are split across two locations:
+  repository root (2 files) and tests/gate_v03/ (5 files).
+
+**Root cause**:
+  The V0.3 separation tests (separation_smoke,
+  six_combinations) were written before the
+  tests/gate_vN/ convention was established (in V0.4).
+  They were placed at the repo root as standalone
+  scripts. The tests/gate_v03/ directory contains a
+  different set of V0.3-era tests (G0.7, G0.9, G0.11)
+  that were organized differently.
+
+  When V0.4 introduced tests/gate_v04/run_all.py, the
+  root files were never moved. They remained as orphan
+  scripts at the root, but still work when run from
+  the repository root.
+
+**Why it was hidden**:
+  - Both root files work (run correctly from repo root).
+  - They are not in any run_all.py.
+  - No test asserts file layout.
+  - The root-level naming (tests_gate_v03_*.py) looks
+    intentional but is not part of any convention.
+
+**Impact**: LOW.
+  - Files work correctly (verified 2026-09-25 on Colab:
+    six_combinations printed "6/6 combinations" and
+    "ALL ASSERTIONS PASSED").
+  - No impact on V0.4-V0.7.
+  - The only issue is organization: they should be
+    in tests/gate_v03/ for consistency.
+
+**Status**: CLOSED (2026-09-28) as documented.
+
+  Fix path (combined with J-0.8.26):
+    1. Move both files to tests/gate_v03/.
+    2. Adjust sys.path lines:
+       BEFORE: sys.path.insert(0, 'kernel')
+       AFTER:  sys.path.insert(0, '../../kernel')
+       (or use Path(__file__).resolve() approach)
+    3. Create tests/gate_v03/run_all.py that runs all
+       7 files (5 existing + 2 moved).
+    4. Add a CI step for V0.3.
+
+  This entry records the current state. No code change
+  in this commit. The fix is scheduled together with
+  J-0.8.26 (V0.3 not in CI), since they are the same
+  reorganization.
+
+**Cost estimate**: 0 (documented only). Combined fix
+estimate: 2-3 hours.
+
+**Scientific note**: This is the 8th finding closing
+without code change. Together with J-0.8.23 (Gate D
+orphan) and J-0.8.26 (V0.3 not in CI), it reveals a
+consistent pattern: tests written before V0.4 are not
+integrated into the V0.4+ convention
+(tests/gate_vN/run_all.py + CI). The fix is a single
+reorganization that addresses all three.
