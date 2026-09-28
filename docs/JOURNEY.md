@@ -1886,3 +1886,76 @@ J-0.8.13, J-0.8.15, J-0.8.17, J-0.8.18) closing as
 "verified, no fix required". The pattern: aspiration
 written as fact. Lesson: distinguish "planned" from
 "exists" in documentation.
+
+## J-0.8.23 — Gate D not run since V0.2a
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Orphan test / no ongoing verification
+**Related**: J-0.8.20 (Gate D layer 3), J-0.8.26 (V0.3 not in CI)
+
+**Symptom**:
+  tests/gate_d_benchmark.py exists (5,488 bytes,
+  2026-09-13). docs/GATE_D_report.md exists (same date).
+
+  But Gate D is NOT run by:
+    - .github/workflows/test.yml   (no entry)
+    - bootstrap.py                  (no entry)
+    - tests/*/run_all.py            (no entry)
+
+  Verification:
+    grep -n "gate_d\|Gate D" .github/workflows/test.yml
+    -> (empty)
+    grep -n "gate_d\|Gate D" bootstrap.py
+    -> (empty)
+    grep -rn "gate_d" tests/*/run_all.py
+    -> (empty)
+
+  Last known run: 2026-09-13 (per GATE_D_report.md).
+
+**Root cause**:
+  Gate D predates the tests/gate_vN/ convention (V0.4+).
+  It was created during V0.2a as a one-off benchmark.
+  When V0.4 introduced gate suites with run_all.py and
+  CI, Gate D was never integrated.
+
+  Additionally: Gate D depends on the 'memory' branch
+  being registered and 'memory_system' subject being
+  present. On a fresh clone these are missing (until
+  v0.7.14 added them via bootstrap).
+
+**Why it was hidden**:
+  - No test asserts that all tests/ files are exercised.
+  - Gate D is in tests/ root, not in any gate_vN/ dir.
+  - CI only runs V0.4, V0.5, V0.6, V0.7 (all in
+    tests/gate_vN/).
+  - The orphan status is invisible until someone
+    actually tries to run Gate D.
+
+**Impact**: MEDIUM.
+  - A documented benchmark (GATE_D_report.md) claims
+    results, but there is no way to reproduce them
+    automatically.
+  - Gate D would likely fail today because of
+    J-0.8.20 (policy memory:write permission).
+  - No CI catches regressions in the memory layer.
+
+**Status**: CLOSED (2026-09-28) as documented orphan.
+
+  Fix path (v0.7.17+):
+    1. Fix J-0.8.20 (policy memory:write) first.
+    2. Add step_run_gate_d() to bootstrap.py.
+    3. Add a CI step: python tests/gate_d_benchmark.py.
+    4. Optionally move to tests/gate_v02a/run_all.py.
+
+  This entry records the current state. No code change
+  in this commit.
+
+**Cost estimate**: 0 (documented only).
+
+**Scientific note**: This is the 6th finding in the
+J-0.8.x series closing without code change. Together
+with J-0.8.26 (V0.3 not in CI), it reveals a pattern:
+test files written during V0.1-V0.3 were never integrated
+into the automated suites that V0.4+ built. The V0.4+
+convention (tests/gate_vN/ + run_all.py + CI) did not
+retroactively capture earlier tests.
