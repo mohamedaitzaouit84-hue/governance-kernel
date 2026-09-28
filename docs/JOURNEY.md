@@ -1736,3 +1736,77 @@ J-0.8.x series. It reveals a class of problems invisible
 until a specific mode is tested (import-after-install).
 The lesson: testing "from inside the repo" is not the
 same as testing "as an SDK".
+
+## J-0.8.15 — J-0.8.2 absent from JOURNEY sequence
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Documentation gap
+**Related**: J-0.8.1, J-0.8.3
+
+**Symptom**:
+  The J-0.8.x numbering sequence in docs/JOURNEY.md
+  jumps from J-0.8.1 to J-0.8.3. No J-0.8.2 entry exists.
+
+  Verification:
+    grep "^## J-0.8" docs/JOURNEY.md
+  Output:
+    ## J-0.8.1
+    ## J-0.8.3   <- no J-0.8.2
+    ## J-0.8.4
+    ...
+
+  Additional verification:
+    grep -rn "J-0.8.2\b" . --include="*.md"
+  Only finds references to J-0.8.15 (this finding) and
+  to J-0.8.20/21/28/29 (partial matches, not J-0.8.2).
+
+    git log --all -S "J-0.8.2" -- docs/JOURNEY.md
+  Finds no commit that ever added a J-0.8.2 entry.
+
+**Root cause**:
+  Unknown. The number was skipped when the J-0.8.x series
+  was created (2026-09-22, during V0.7.5 to V0.7.9 fixes).
+  Two possibilities:
+    (a) J-0.8.1 and J-0.8.3 were written together, and the
+        author simply skipped .2 by mistake.
+    (b) A J-0.8.2 entry was drafted but never committed.
+  No evidence supports either.
+
+**Why it was hidden**:
+  - JOURNEY.md does not assert sequence completeness.
+  - No test checks for gaps.
+  - The gap is small (one number) and easy to overlook.
+  - Each later finding just used the next number without
+    checking the previous one.
+
+**Impact**: LOW.
+  - No content is missing (no J-0.8.2 ever existed).
+  - Only the numbering is discontinuous.
+  - README and other docs reference J-0.8.1, J-0.8.3, etc.
+    individually, not the count.
+  - It was flagged as a finding (J-0.8.15) during review
+    because the discontinuity was noticed.
+
+**Resolution** (this commit):
+
+  Documented as a numbering gap, not a missing finding.
+  No content to restore.
+
+  Decision: do NOT create a J-0.8.2 entry retroactively.
+  Reason: numbers are historical; inventing .2 now would
+  create false history. The gap is the record.
+
+  HANDOVER.md already documents this in its J-0.8.x list:
+    "(numbered 1, 3-11; J-0.8.2 is absent — see J-0.8.15)"
+
+**Cost estimate**: 0 (verified, no fix required).
+
+**Status**: CLOSED (2026-09-28).
+
+**Scientific note**: This is the fourth finding (after
+J-0.8.13, J-0.8.17, J-0.8.18) that closes as "verified,
+no fix required". These are findings that turned out to
+be documentation of a known state rather than actionable
+defects. The pattern: review reveals small anomalies,
+verification confirms they are benign, and closure is
+the correct action. Not every finding requires a change.
