@@ -2132,3 +2132,107 @@ consistent pattern: tests written before V0.4 are not
 integrated into the V0.4+ convention
 (tests/gate_vN/run_all.py + CI). The fix is a single
 reorganization that addresses all three.
+
+## J-0.8.33 — GATES_v0.3_G07_report.md drift kappa inaccuracy
+
+**Discovered**: 2026-09-28, while investigating J-0.8.26
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.26 (V0.3 not in CI)
+
+**Symptom**:
+  docs/GATES_v0.3_G07_report.md (2026-09-14) states:
+
+    ### Scenario: drift (non-trivial)
+    - Policy effect | C: 1.000 ± 0.000
+    - Policy effect | D: 0.966 ± 0.011
+    - |Δκ| = 0.034 → HOLDS
+
+  But running the same test (tests/gate_v03/g07_policy_separation.py)
+  on 2026-09-28 gives:
+
+    drift: |kappa_C - kappa_D| = 0.287  -> MAY FAIL
+
+  Discrepancy: 8.4x (0.034 vs 0.287).
+
+  For noise, both agree:
+    Report: |Δκ| = 0.044 -> HOLDS
+    Now:    |kappa_C - kappa_D| = 0.044 -> HOLDS
+
+  For fixed, both agree:
+    Report: |Δκ| = 0.300 -> MAY FAIL
+    Now:    |kappa_C - kappa_D| = 0.300 -> MAY FAIL
+
+  So the discrepancy is specific to the drift scenario.
+
+**Verification** (2026-09-28):
+
+  1. Determinism: ran g07 three times consecutively.
+     All three gave identical numbers (0.300 / 0.287 / 0.044).
+     Code is deterministic.
+
+  2. Environment portability:
+     - environment.py uses random.Random(seed)
+       -> deterministic Mersenne Twister, same across
+          Python versions and platforms.
+     - Uses math.sin for drift signal -> IEEE 754, stable.
+     - No os.environ, no platform-dependent calls,
+       no global random.
+
+  3. seed variation:
+     Changed seed from 1000+r to r (temporary edit, then
+     git checkout restored).
+     drift: 0.276 (still > 0.2). Not 0.034.
+     So different seed does not explain the report value.
+
+  4. Git history:
+     tests/gate_v03/g07_policy_separation.py  -> last modified
+       2026-09-14 (dcf170e).
+     kernel/separation/environment.py        -> last modified
+       2026-09-14 (dcf170e).
+     No commits between then and now.
+
+**Root cause**:
+  Most likely: typo in the report (0.034 written instead
+  of 0.287 or 0.276). The other two scenarios (fixed,
+  noise) match exactly, which rules out an environmental
+  or code-based explanation.
+
+  Less likely but possible: the report was generated from
+  a draft version of the test that was not the one
+  committed as dcf170e.
+
+**Why it was hidden**:
+  - Report stated "SEPARATION HOLDS" for drift, which is
+    plausible at a glance.
+  - "2/3 gates" in V0.3_SUMMARY.md was accepted as-is.
+  - No one re-ran V0.3 after 2026-09-14.
+  - J-0.8.26 (V0.3 not in CI) meant V0.3 was never
+    automatically re-verified.
+
+**Impact**: LOW.
+  - V0.3 conclusion ("2/3 gates") is unchanged.
+  - G0.7 verdict for drift is MAY FAIL, not HOLDS.
+  - This slightly changes the interpretation: in the
+    drift scenario, Policy is NOT fully architecture-
+    independent.
+  - Does NOT affect V0.4-V0.7.
+  - Does NOT affect kernel.
+
+**Resolution** (this commit):
+
+  Documented. No fix in this commit.
+  The report is a historical document.
+
+  Future: if V0.3 documentation is revised, update the
+  drift line in GATES_v0.3_G07_report.md to state the
+  actual value (0.287). This would require editing a
+  doc under docs/, which is not protected but is
+  preferred to be done in a dedicated pass.
+
+**Cost estimate**: 0 (documented only).
+
+**Scientific note**: This is the 9th finding closing
+without code change. It reveals the value of J-0.8.26:
+because V0.3 was never in CI, its reported numbers were
+never re-verified. The discovery of this inaccuracy
+was only possible by manually re-running the test.
