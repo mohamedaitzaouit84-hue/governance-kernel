@@ -1810,3 +1810,79 @@ be documentation of a known state rather than actionable
 defects. The pattern: review reveals small anomalies,
 verification confirms they are benign, and closure is
 the correct action. Not every finding requires a change.
+
+## J-0.8.19 — HANDOVER claims 7 pending DOIs; only 3 exist
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Unverified claim
+**Related**: HANDOVER (original)
+
+**Symptom**:
+  Original HANDOVER (pre-2026-09-23) claimed:
+    "3 DOIs موجودة + 7 قيد الإنشاء = 10 قريباً"
+    (3 DOIs exist + 7 pending = 10 soon)
+
+  Verification in repository:
+    grep -rohE "10\\.5281/zenodo\\.[0-9]+" . --include="*.md" | sort -u
+  Result:
+    10.5281/zenodo.22773364   (Concept DOI)
+    10.5281/zenodo.22773365   (V0.5 DOI)
+    10.5281/zenodo.22812967   (V0.6 DOI)
+  Only 3 unique DOIs. No trace of 7 others.
+
+**Root cause**:
+  The "7 pending DOIs" was likely a plan for future
+  releases (V0.7, V0.8, etc.), not a record of existing
+  DOIs. The HANDOVER text conflated "planned" with
+  "in progress".
+
+**Why it was hidden**:
+  - No test asserts DOI count.
+  - The claim was plausible.
+  - No one had audited DOIs against Zenodo.
+
+**Impact**: LOW-MEDIUM.
+  - For external credibility: 3 real DOIs (V0.5, V0.6,
+    Concept) are visible.
+  - The "7 pending" claim was aspirational, not factual.
+  - HANDOVER rewrite (8eaccc9) removed the claim.
+
+**Verification** (2026-09-28):
+
+  Checked Zenodo directly via DOI URL:
+    https://doi.org/10.5281/zenodo.22812967
+  Result:
+    - Published September 17, 2026
+    - Version v0.6-closed
+    - File: governance-kernel-v0.6-closed.zip (193.7 kB)
+    - Author: Ahmed Ait Zaouit (Morocco)
+  DOI is real and accessible.
+
+  For the 3 DOIs:
+    - 10.5281/zenodo.22773364 (Concept DOI)
+    - 10.5281/zenodo.22773365 (V0.5)
+    - 10.5281/zenodo.22812967 (V0.6)
+  All visible in README.md and AUTHORS.md.
+
+  The 7 claimed "pending" DOIs do not exist in the
+  repository nor (presumably) on Zenodo.
+
+**Resolution** (this commit):
+
+  Documented as: 3 real DOIs, 0 trace of 7 others.
+  No action needed.
+  HANDOVER rewrite removed the misleading claim.
+
+  Future: if DOIs are planned for V0.7, V0.8, etc.,
+  list them explicitly with status (planned / pending /
+  published), not as a count.
+
+**Cost estimate**: 0 (verified, no fix required).
+
+**Status**: CLOSED (2026-09-28).
+
+**Scientific note**: This is the 5th finding (after
+J-0.8.13, J-0.8.15, J-0.8.17, J-0.8.18) closing as
+"verified, no fix required". The pattern: aspiration
+written as fact. Lesson: distinguish "planned" from
+"exists" in documentation.
