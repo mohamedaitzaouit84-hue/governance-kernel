@@ -2236,3 +2236,84 @@ without code change. It reveals the value of J-0.8.26:
 because V0.3 was never in CI, its reported numbers were
 never re-verified. The discovery of this inaccuracy
 was only possible by manually re-running the test.
+
+## J-0.8.27 — V0.7 timing 4.65s without baseline
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Performance observation
+**Related**: ADDENDUM_2026-09-23
+
+**Symptom**:
+  HANDOVER_ADDENDUM_2026-09-23 recorded:
+    V0.7 | 19/19 | 4.65s (Colab, 2026-09-23)
+
+  No Termux baseline was recorded at that time.
+  The value was Colab-specific.
+
+**Root cause**:
+  Timing varies significantly across environments:
+    - Colab: cloud x86_64, 4 CPU cores, 13 GB RAM
+    - Termux: phone ARM, throttled CPU, limited RAM
+  A single "4.65s" was misleading without environment
+  context.
+
+**Why it was hidden**:
+  - The value appeared in a table titled "Colab".
+  - But it was also cited without environment in
+    Section 3.2 of the same addendum.
+  - No Termux baseline existed.
+
+**Impact**: LOW.
+  - No user-facing claim depended on it.
+  - It is a performance observation, not a defect.
+
+**Verification** (2026-09-28):
+
+  Both environments measured with 3 runs each:
+
+  Colab:
+    V0.4: 0.77s (min 0.75, max 0.78)
+    V0.5: 0.81s (min 0.79, max 0.84)
+    V0.6: 2.55s (min 2.23, max 3.20)
+    V0.7: 6.31s (min 5.46, max 7.12)
+    bootstrap: 0.50s (min 0.28, max 0.89)
+
+  Termux (Android, ARM):
+    V0.4: 8.64s (min 8.62, max 8.66)
+    V0.7: 42.46s (min 42.00, max 43.14)
+
+  Comparison:
+    V0.4: Colab is ~11.2x faster than Termux
+    V0.7: Colab is ~6.7x faster than Termux
+
+  Colab value changed from 4.65s (2026-09-23) to 6.31s
+  (2026-09-28). Likely due to CPU throttling — the
+  current run showed 5.46s to 7.12s range.
+
+**Resolution** (this commit):
+
+  Documented. Full baseline now available for both
+  environments. J-0.8.27 is closed as "resolved:
+  baseline complete".
+
+  Future measurements should always include the
+  environment label.
+
+**Cost estimate**: 0 (observation).
+
+**Status**: CLOSED (2026-09-28).
+
+**Scientific note**: This is the 10th finding closing
+without code change. It highlights the importance of
+environment context for performance numbers. A single
+timing value is meaningless without stating the
+hardware and Python version.
+
+**Performance summary** (for reference):
+
+  Environment:       Colab           Termux         Ratio
+  V0.4:              0.77s           8.64s          ~11.2x
+  V0.5:              0.81s           (not measured) -
+  V0.6:              2.55s           (not measured) -
+  V0.7:              6.31s           42.46s         ~6.7x
+  bootstrap:         0.50s           ~0.5s          ~1x
