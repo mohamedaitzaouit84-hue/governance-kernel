@@ -1959,3 +1959,94 @@ test files written during V0.1-V0.3 were never integrated
 into the automated suites that V0.4+ built. The V0.4+
 convention (tests/gate_vN/ + run_all.py + CI) did not
 retroactively capture earlier tests.
+
+## J-0.8.22 — branch_manifest.yaml overstates memory contents
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Manifest vs reality mismatch
+**Related**: J-0.8.20 (Gate D layer 3)
+
+**Symptom**:
+  memory/branch_manifest.yaml (version: "0.2.0",
+  2026-09-13) declares 14 .py files across 5 categories:
+
+    episodic:    event_log.py, event_index.py       (2)
+    semantic:    node.py, edge.py, graph.py,
+                 traversal.py                        (4)
+    procedural:  trail.py, reinforcement.py,
+                 decay.py                            (3)
+    meta:        swarm.py, retriever.py,
+                 consensus.py                        (3)
+    dynamics:    weights.py, bounds.py              (2)
+
+  Actual files in memory/:
+    memory/__init__.py
+    memory/gate.py
+    memory/register_branch.py
+    memory/episodic/__init__.py
+    memory/episodic/event_log.py                    (1 of 2)
+    memory/semantic/__init__.py
+    memory/semantic/edge.py                         (1 of 4)
+    memory/semantic/graph.py                        (2 of 4)
+    memory/semantic/node.py                         (3 of 4)
+    memory/semantic/traversal.py                    (4 of 4)
+
+  Missing:
+    episodic/event_index.py                         (1)
+    procedural/  (entire directory)                 (3)
+    meta/        (entire directory)                 (3)
+    dynamics/    (entire directory)                 (2)
+    -----
+    Total missing: 9 files, 3 entire directories.
+
+**Root cause**:
+  The manifest was written during V0.2a (2026-09-13) as
+  the intended memory layer architecture. Only the
+  semantic layer and one episodic file were implemented.
+  The procedural, meta, and dynamics sublayers were
+  planned but never built.
+
+  Version field still says "0.2.0" — it was never updated.
+
+**Why it was hidden**:
+  - memory/gate.py does not validate the manifest
+    against actual files.
+  - register_branch.py lists permissions, not files.
+  - No test asserts manifest-vs-reality consistency.
+  - The file is descriptive, not executable.
+
+**Impact**: LOW-MEDIUM.
+  - A reader of branch_manifest.yaml may believe the
+    memory layer is fully implemented (it is not).
+  - Does NOT affect V0.4-V0.7 (they don't rely on
+    procedural/meta/dynamics).
+  - Does NOT break Gate D (it uses semantic + episodic
+    only).
+  - The manifest is a V0.2a historical document.
+
+**Resolution** (this commit):
+
+  Documented as historical manifest, no fix planned.
+  Decision: do NOT delete the planned file names.
+  Reason: the manifest records V0.2a intent, and modifying
+  it (to remove planned files) would erase the record of
+  what was intended.
+
+  memory/ is protected in G0.ZZ. Any change to
+  branch_manifest.yaml requires FREEZE + exception.
+  Given the LOW impact, this is not justified.
+
+  Alternative considered: add a "status: planned"
+  annotation to missing entries. Rejected for now —
+  would need FREEZE and does not add much value.
+
+**Cost estimate**: 0 (documented only).
+
+**Status**: CLOSED (2026-09-28).
+
+**Scientific note**: This is the 7th finding closing
+without code change. The pattern is: a plan document
+(manifest, README, HANDOVER) records intended state,
+but the code evolves differently. The fix is not to
+rewrite the document but to acknowledge it as a
+snapshot of intent.
