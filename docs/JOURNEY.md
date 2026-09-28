@@ -2317,3 +2317,113 @@ hardware and Python version.
   V0.6:              2.55s           (not measured) -
   V0.7:              6.31s           42.46s         ~6.7x
   bootstrap:         0.50s           ~0.5s          ~1x
+
+## J-0.8.37 — No standard benchmark for governance kernels
+
+**Discovered**: 2026-09-28, during testing session on Colab
+**Class**: Market positioning / Category definition
+**Related**: J-0.8.36 (planned comparison), SDK roadmap
+
+**Symptom**:
+  Attempted to compare Governance Kernel against standard
+  open-source governance/policy tools. Found no comparable
+  category.
+
+  Tools examined (2026-09-28):
+    - OPA (Open Policy Agent, CNCF)         v1.21.0
+      Category: general policy engine (Rego).
+      Interface: opa eval -d policy.rego -i input.json
+      Scope: allow/deny decisions on JSON input.
+      Not agent-aware. No trust ladder. No audit chain.
+      No kill switch. Policy only.
+
+    - Guardrails AI                          v0.11.0
+      Category: LLM output validation.
+      Interface: Guard(prompt, validator).validate(output)
+      Scope: checks LLM outputs against validators.
+      Not agent-aware. No action governance.
+
+    - NeMo Guardrails (NVIDIA)               v0.24.1
+      Category: LLM dialogue safety.
+      Interface: RailsConfig.from_path() + dialog flow.
+      Scope: filters LLM conversations (prompt injection,
+      content moderation).
+      Not agent-aware. No permission model.
+
+    - Cedar (AWS)
+      Category: policy language (Rust).
+      Interface: cedar-policy CLI / crate.
+      Scope: policy evaluation, formal verification.
+      Not available as a pip-installable Python package
+      for easy comparison.
+
+  Conclusion: no benchmark or competing tool addresses
+  the same scope as Governance Kernel:
+    - governance of AGENT ACTIONS (not LLM outputs)
+    - trust ladder per subject
+    - audit hash-chained log
+    - kill switch
+    - resource governor
+    - multi-agent consensus + delegation
+
+**Root cause**:
+  AI Safety tooling evolved along two dominant axes:
+    (a) LLM-centric (NeMo, Guardrails AI, HarmBench).
+    (b) General policy engines (OPA, Cedar).
+
+  Neither addresses "governance kernel for agents" as a
+  formal category.
+
+  This is both:
+    - an opportunity (no direct competitor), and
+    - a challenge (no established benchmark to measure
+      against).
+
+**Why it was hidden**:
+  - Assumed direct comparison was possible.
+  - Discovered only when attempting the comparison.
+
+**Impact**: MEDIUM (positive).
+  - Clarifies that the project occupies a niche.
+  - Also clarifies that no external benchmark validates
+    the claim.
+  - Justifies building a dedicated benchmark as future
+    work.
+
+**Resolution** (this commit):
+
+  Documented. No fix in this commit.
+
+  Decision: do NOT attempt further direct comparison
+  with OPA / NeMo / Guardrails AI / Cedar.
+  Reason: scope mismatch is fundamental, not superficial.
+
+  Future work (V0.8+):
+    - Define a "Governance Kernel Benchmark" specification.
+    - Include agent-action scenarios (subject, action,
+      expected decision, rationale).
+    - Publish openly (GitHub + arXiv).
+    - Invite external contributors.
+
+**Cost estimate**: 0 (documented only).
+
+**Scientific note**: This is the 11th finding closing
+without code change. It is also the first finding that
+is PURELY about positioning, not about an internal
+defect. It documents a gap in the AI Safety tooling
+landscape: LLM-centric safety (NeMo, Guardrails AI)
+and general policy engines (OPA, Cedar) exist, but
+agent-action governance does not have a standard
+benchmark.
+
+**Related observation**:
+  Even if direct comparison is impossible, indirect
+  comparison is possible:
+    - Kernel's policy engine can be translated to Rego
+      for OPA (policy-only comparison).
+    - Kernel's decision engine can be described as
+      "governance for agents" and positioned ABOVE
+      OPA/Cedar, not as a replacement.
+
+  This positions the project as a layer that could
+  use OPA/Cedar internally, not compete with them.
