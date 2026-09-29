@@ -87,6 +87,10 @@ ALLOWED_EXCEPTIONS = {
     # policy/policies/default.yaml. Additive only. Required
     # for Gate D memory:write.
     "policy/policies/default.yaml",
+    # v0.7.16 (J-0.8.42): default.yaml.sig is regenerated on
+    # CI (fresh key) and on Termux (after YAML edit).
+    # Therefore also modified between v0.6-closed and HEAD.
+    "policy/policies/default.yaml.sig",
     "audit/integrity.py",
     "policy/policy_store.py",
     "authorization/branch_registry.py",

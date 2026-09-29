@@ -2864,3 +2864,74 @@ integrity (signing) and usability (editing). The
 project chose integrity. The cost is one extra step
 (bootstrap) per YAML edit. A trade-off that is
 acceptable but should be documented.
+
+## J-0.8.42 — policy/policies/default.yaml.sig must be excluded from G0.ZZ
+
+**Discovered**: 2026-09-29, CI run 36585669615 (after v0.7.16)
+**Class**: G0.ZZ ALLOWED_EXCEPTIONS incompleteness
+**Related**: J-0.8.20 (v0.7.16 memory_system role), J-0.8.28 (v0.7.15 subjects.json exception)
+
+**Symptom**:
+  After v0.7.16 (commit 7c6dd88), G0.ZZ fails:
+
+    Files changed since v0.6-closed: 70
+    VIOLATIONS:
+      - policy/policies/default.yaml.sig
+    G0.ZZ: FAILED (1 kernel files modified)
+
+  This is observed on:
+    - Termux (local)
+    - GitHub Actions (Python 3.11, 3.12, 3.13)
+
+**Root cause**:
+  v0.7.16 modified policy/policies/default.yaml (added role
+  'memory_system'). The signature file default.yaml.sig
+  was regenerated accordingly.
+
+  Both files are now different between v0.6-closed and
+  HEAD.
+
+  In v0.7.16, ONLY 'policy/policies/default.yaml' was
+  added to ALLOWED_EXCEPTIONS. 'default.yaml.sig' was
+  not.
+
+  G0.ZZ's PROTECTED_PREFIXES includes 'policy/', so
+  'policy/policies/default.yaml.sig' is flagged as a
+  violation.
+
+**Why it was hidden**:
+  - Prior to v0.7.16, default.yaml.sig had not been
+    modified since v0.6-closed.
+  - The exception added in v0.7.16 covered only the
+    YAML file, not its signature.
+  - Local Termux G0.ZZ passed before v0.7.16 was
+    committed (default.yaml.sig was unchanged then).
+  - CI exposed it immediately after push.
+
+**Impact**: MEDIUM (CI failure).
+  - v0.7.16 broke CI.
+  - V0.5 and V0.7 other gates are fine; only G0.ZZ
+    fails.
+  - Does NOT affect production behavior.
+  - Fix is additive (one line).
+
+**Fix** (this commit):
+
+  Add 'policy/policies/default.yaml.sig' to
+  ALLOWED_EXCEPTIONS in tests/gate_v07/
+  test_g0ZZ_kernel_untouched.py.
+
+  Update docs/FREEZE_v0.7.16.md Section 0 to mention
+  both files.
+
+**Cost estimate**: 15 minutes.
+
+**Status**: CLOSED (2026-09-29).
+
+**Scientific note**: This is the 17th finding closing
+without code change (in the sense that kernel logic is
+not changed; the fix is in the G0.ZZ exception list).
+It reveals a general lesson: when a protected file is
+intentionally modified, its side effects (signatures,
+compiled artifacts, logs) may also count as changes
+and must be enumerated exhaustively.

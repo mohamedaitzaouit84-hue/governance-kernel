@@ -50,7 +50,8 @@
 ## Section 1 — ALLOWED_EXCEPTIONS update
 
 Add to tests/gate_v07/test_g0ZZ_kernel_untouched.py:
-    "policy/policies/default.yaml",   # v0.7.16 (J-0.8.20)
+    "policy/policies/default.yaml",      # v0.7.16 (J-0.8.20)
+    "policy/policies/default.yaml.sig",  # v0.7.16 (J-0.8.42)
 
 ## Section 2 — Rationale
 
