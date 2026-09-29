@@ -2627,3 +2627,76 @@ thresholds. Generalizing thresholds across
 heterogeneous scenarios produces misleading FAILs
 or misleading PASSes.
 
+
+## J-0.8.38 — README does not reflect current state
+
+**Discovered**: 2026-09-29, during GitHub review session
+**Class**: Documentation staleness
+**Related**: J-0.8.12 (previous README fix), J-0.8.34 (V0.3 actual 1/5)
+
+**Symptom**:
+  README.md (last updated 2026-09-25) contains five
+  inaccuracies:
+
+  1. Status table line 42:
+       "| V0.3 Separation | 2/3 gates | 0ad9360 |"
+     Reality: 1/5 gates (see J-0.8.34).
+
+  2. Status table has 7 rows only. No row for
+     v0.7.10 → v0.7.15 (6 releases).
+
+  3. Quick start does not mention `python bootstrap.py`.
+     A fresh clone fails without it.
+
+  4. Architecture tree lists only:
+       tests/gate_v04/
+       tests/gate_v05/
+     Missing:
+       tests/gate_v03/
+       tests/gate_v06/
+       tests/gate_v07/
+     And root-level tests_gate_v03_*.py.
+
+  5. Footer: "Last updated: 2026-09-25 — V0.7.15"
+     4 days stale.
+
+**Root cause**:
+  README was updated once (J-0.8.12, 2026-09-25).
+  Subsequent changes (v0.7.10-15, V0.3 investigation)
+  did not trigger a README refresh. No test asserts
+  README consistency.
+
+**Why it was hidden**:
+  - J-0.8.12 fixed "Six gates" only.
+  - Other rows remained as they were.
+  - No CI check on README.
+  - Same pattern as J-0.8.33/34 (docs drift).
+
+**Impact**: MEDIUM for external credibility.
+  - A visitor sees "V0.3: 2/3 gates" (wrong).
+  - A visitor follows quick start, hits
+    ModuleNotFoundError (no bootstrap).
+  - A visitor sees old "Last updated".
+
+**Fix** (this commit):
+
+1. Update Status table:
+   - V0.3: "1/5 gates (see J-0.8.34)"
+   - Add row for v0.7.10 → v0.7.15
+2. Update Quick start:
+   - Add `python bootstrap.py` first
+3. Update Architecture tree:
+   - Add tests/gate_v03/, gate_v06/, gate_v07/
+   - Add root-level tests_gate_v03_*.py note
+4. Update footer: 2026-09-29
+5. Keep: "29 gates", "54/54", "18 patterns" (already correct)
+
+**Cost estimate**: 60 minutes.
+
+**Status**: CLOSED (2026-09-29).
+
+**Scientific note**: This is the 15th finding closing
+without code change (docs-only). It completes the
+README refresh started in J-0.8.12. Lesson: README needs
+periodic refresh after each release cycle, not only
+when "Six gates" type errors surface.

@@ -39,11 +39,12 @@ and does NOT claim.
 |---------|--------|----------|
 | V0.1 Kernel | CLOSED | d4d776c |
 | V0.2a Memory | CLOSED | 0926b4d |
-| V0.3 Separation | 2/3 gates | 0ad9360 |
+| V0.3 Separation | 1/5 gates (see J-0.8.34) | 0ad9360 |
 | V0.4 Attacks | CLOSED (PRI = 1.0000) | e67ec7f |
 | V0.5 Agents | CLOSED (5/5 gates) | 6000b11 |
 | V0.6 Multi-Agent | CLOSED (5/5 gates) | 3cdb44f |
 | V0.7 Red Team + Performance + Real Agents + Delegation | CLOSED (19/19 gates) | 791e419 |
+| v0.7.10 -> v0.7.15 | CLOSED (CI + bootstrap + G0.ZZ) | 02884b0 |
 
 Full V0.5 report: docs/GATES_v0.5_report.md
 Full V0.7 report: docs/GATES_v0.7_report.md
@@ -101,8 +102,11 @@ Pre-registered threshold: 0.95. Result: 1.0000. Unchanged.
     ├── kernel/separation/     V0.3 Info/Policy/Node separation
     ├── agents/                V0.5 deterministic agents
     └── tests/
+        ├── gate_v03/          G0.7, G0.9, G0.11, separation
         ├── gate_v04/          5 attacks + 2 baselines
-        └── gate_v05/          G0.13 - G0.17
+        ├── gate_v05/          G0.13 - G0.17
+        ├── gate_v06/          G0.18 - G0.22
+        └── gate_v07/          G0.23 - G0.41 + G0.ZZ
 
 ---
 
@@ -142,6 +146,9 @@ Untested hypotheses are listed in docs/PATTERNS.md.
 
     git clone https://github.com/mohamedaitzaouit84-hue/governance-kernel
     cd governance-kernel
+
+    # Bootstrap (required for fresh clones)
+    python bootstrap.py
 
     # Verify audit chain
     python audit/integrity.py
@@ -188,4 +195,4 @@ Built on a phone, at zero cost.
 
 ---
 
-*Last updated: 2026-09-25 — V0.7.15*
+*Last updated: 2026-09-29 — v0.7.15*
