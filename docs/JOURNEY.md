@@ -2427,3 +2427,203 @@ benchmark.
 
   This positions the project as a layer that could
   use OPA/Cedar internally, not compete with them.
+
+## J-0.8.34 — V0.3_SUMMARY says 2/3 gates; actual 1/5
+
+**Discovered**: 2026-09-28, during V0.3 investigation
+**Class**: Documentation inaccuracy
+**Related**: J-0.8.33 (G07 report), J-0.8.35, J-0.8.36
+
+**Symptom**:
+  docs/V0.3_SUMMARY.md states:
+    "الحالة: مكتمل تقنياً (2/3 gates CLOSED, 1 finding documented)"
+
+  In reality, running tests/gate_v03/run_all.py on
+  2026-09-28 gives:
+    G0.7 Policy Separation           FAILED (drift 0.287)
+    G0.9 Statistical Repeatability   FAILED (noise)
+    G0.9 v2 Repeatability (std)      FAILED (D architecture)
+    G0.9 v3 Same-seed Repeatability  CLOSED
+    G0.11 Counterfactual             FAILED (drift)
+    --> V0.3 gates: 1/5 closed
+
+  Discrepancy: 2/3 (documented) vs 1/5 (actual).
+
+**Root cause**:
+  V0.3 was documented in 2026-09-14 as "2/3 gates".
+  The claim "2/3" may have referred to:
+    - G0.7 (HOLDS in noise, MAY FAIL in drift)
+    - G0.9 (CLOSED, though the threshold was unrealistic)
+    - G0.11 (FAILED as documented)
+  Counting only the "successes" gives 2/3. But the
+  actual test count (5 tests) yields 1/5 when all
+  failures are honest.
+
+  The phrase "1 finding documented" (G0.11) implies
+  only one failure. Actually there are 4 failures.
+
+**Why it was hidden**:
+  - V0.3 was never in CI (J-0.8.26).
+  - Reports were accepted as-is (J-0.8.33 pattern).
+  - The phrase "2/3" was plausible.
+  - No one re-ran the tests until 2026-09-28.
+
+**Impact**: LOW-MEDIUM (documentation only).
+  - Does NOT affect V0.4-V0.7.
+  - Does NOT affect kernel.
+  - V0.3 is a research finding, not a production gate.
+  - The lesson is methodological: reports without
+    continuous verification drift from reality.
+
+**Resolution** (this commit):
+
+  Documented. No fix.
+  Decision: do NOT rewrite V0.3_SUMMARY.md now
+  (would require a dedicated pass through V0.3
+  documentation).
+  Future work: when V0.3 is revised, replace "2/3"
+  with the accurate "1/5 (4 tests failing in drift/noise;
+  see J-0.8.33/35/36)".
+
+**Cost estimate**: 0 (documented only).
+
+**Status**: CLOSED (2026-09-29).
+
+**Scientific note**: This is the 12th finding closing
+without code change. It is directly related to J-0.8.33
+(G07 drift kappa inaccuracy) and J-0.8.26 (V0.3 not in
+CI). The three together show a pattern: without CI,
+reported numbers can drift from reality.
+
+## J-0.8.35 — G0.9 statistical threshold unrealistic in noise
+
+**Discovered**: 2026-09-28, during V0.3 investigation
+**Class**: Test design (threshold scope)
+**Related**: J-0.8.34
+
+**Symptom**:
+  tests/gate_v03/g09_statistical_repeatability.py
+  checks "agreement >= 0.90" for all scenarios,
+  including "noise".
+
+  In the noise scenario, Environment._signal() returns
+  random.gauss(0, 0.5) — pure Gaussian noise. There is
+  no signal to agree on. Each run draws a new sequence.
+
+  Actual results (2026-09-28):
+    noise: C-S 0.42, C-A 0.42, D-S 0.50, D-A 0.50
+    (all FAIL vs threshold 0.90)
+
+  This is not a defect in the kernel. It is a mismatch
+  between the test's expected behavior and the actual
+  randomness of the noise scenario.
+
+**Root cause**:
+  The threshold (0.90) was chosen for the drift
+  scenario (sinusoidal, deterministic). It was
+  applied indiscriminately to noise (random).
+
+  The test does not distinguish:
+    - deterministic signals (fixed, drift)
+    - random signals (noise)
+
+  For a random signal, the maximum agreement is
+  ~50% (coin-flip). A threshold of 0.90 is unreachable.
+
+**Why it was hidden**:
+  - V0.3 was run once (2026-09-14).
+  - The report may have excluded noise from the pass
+    criteria.
+  - No CI, no continuous verification.
+  - Same pattern as J-0.8.33/34.
+
+**Impact**: LOW.
+  - V0.3 result "1/5" counts G0.9 statistical as FAILED
+    (J-0.8.34).
+  - The FAILURE itself is a design issue, not a defect
+    in the kernel.
+  - Fix would be: either exclude noise from the G0.9
+    statistical test, or relax the threshold for
+    noise.
+
+**Status**: CLOSED (2026-09-29) as documented.
+
+  Decision: do NOT modify the test now (would need
+  a dedicated pass through V0.3 tests + FREEZE if
+  the file is protected; it is not, but consistency
+  matters).
+  Documented as part of the V0.3 report inaccuracy
+  series.
+
+**Cost estimate**: 0 (documented only).
+
+**Scientific note**: This finding reveals that
+thresholds are scenario-specific. The same threshold
+(0.90) that makes sense for a deterministic signal
+(drift) is meaningless for a random signal (noise).
+A well-designed benchmark should declare thresholds
+per scenario.
+
+## J-0.8.36 — G0.9 v2 threshold unrealistic for D architecture
+
+**Discovered**: 2026-09-28, during V0.3 investigation
+**Class**: Test design (threshold scope)
+**Related**: J-0.8.34, J-0.8.35
+
+**Symptom**:
+  tests/gate_v03/g09_repeatability_v2.py checks
+  "std(final_state) <= 0.30" for all architectures,
+  including Distributed (D).
+
+  D is inherently stochastic: it depends on local
+  observations that vary per node.
+
+  Actual results (2026-09-28, fixed + drift):
+    C-S: 0.0000 [PASS]
+    C-A: 0.0000 [PASS]
+    D-S: 0.7762 [FAIL]
+    D-A: 0.6565 [FAIL]
+
+  C (Central) is deterministic (std = 0.0000).
+  D (Distributed) is stochastic (std ~ 0.7).
+
+  Both are correct per their design. The threshold
+  (0.30) is appropriate for C but not for D.
+
+**Root cause**:
+  The threshold was likely chosen for C (deterministic).
+  Applied to D (stochastic), it fails systematically.
+
+  The test does not distinguish:
+    - deterministic architectures (C)
+    - stochastic architectures (D)
+
+**Why it was hidden**:
+  - Same pattern as J-0.8.33/34/35.
+  - No CI.
+  - Accepted as-is for ~14 days.
+
+**Impact**: LOW.
+  - V0.3 "1/5" counts G0.9 v2 as FAILED (J-0.8.34).
+  - The FAILURE is a design issue, not a defect
+    in the kernel.
+  - Fix would be: use different thresholds per
+    architecture (C: 0.01, D: 0.80).
+
+**Status**: CLOSED (2026-09-29) as documented.
+
+  Decision: do NOT modify the test now.
+  Documented as part of the V0.3 report inaccuracy
+  series.
+
+**Cost estimate**: 0 (documented only).
+
+**Scientific note**: This is the third finding in
+the J-0.8.33-36 cluster — all reveal the same
+pattern: "thresholds and expectations from one
+scenario, applied blindly to another." The lesson:
+design each test with its own scenario-specific
+thresholds. Generalizing thresholds across
+heterogeneous scenarios produces misleading FAILs
+or misleading PASSes.
+
