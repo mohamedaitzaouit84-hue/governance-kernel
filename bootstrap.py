@@ -32,7 +32,7 @@ import append_only_log as audit
 DEFAULT_SUBJECTS = {
     "owner":            {"role": "owner",            "trust": 1.0},
     "system":           {"role": "system",           "trust": 0.9},
-    "memory_system":    {"role": "system",           "trust": 0.9},
+    "memory_system":    {"role": "memory_system",    "trust": 0.9},
     "agent_high_1":     {"role": "agent_high",       "trust": 0.8},
     "agent_mid_1":      {"role": "agent_mid",        "trust": 0.6},
     "agent_low_1":      {"role": "agent_low",        "trust": 0.3},

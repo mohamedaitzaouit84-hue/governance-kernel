@@ -83,6 +83,10 @@ ALLOWED_EXCEPTIONS = {
     # (memory_system) to authorization/subjects.json. Additive
     # only. Required for fresh-clone correctness (J-0.8.21).
     "authorization/subjects.json",
+    # v0.7.16 (J-0.8.20): new role 'memory_system' added to
+    # policy/policies/default.yaml. Additive only. Required
+    # for Gate D memory:write.
+    "policy/policies/default.yaml",
     "audit/integrity.py",
     "policy/policy_store.py",
     "authorization/branch_registry.py",

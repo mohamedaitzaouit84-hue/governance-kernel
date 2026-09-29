@@ -12,6 +12,14 @@ roles:
       - "audit:write"
       - "policy:read"
       - "memory:read"
+  memory_system:
+    trust_min: 0.8
+    permissions:
+      - "memory:read"
+      - "memory:write"
+      - "memory:graph_traverse"
+      - "memory:trail_reinforce"
+      - "memory:swarm_query"
   agent_high:
     trust_min: 0.7
     permissions:

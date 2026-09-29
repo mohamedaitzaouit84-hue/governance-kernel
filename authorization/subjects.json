@@ -34,7 +34,7 @@
       "trust": 0.1
     },
     "memory_system": {
-      "role": "system",
+      "role": "memory_system",
       "trust": 0.9
     }
   }

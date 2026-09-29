@@ -2700,3 +2700,167 @@ without code change (docs-only). It completes the
 README refresh started in J-0.8.12. Lesson: README needs
 periodic refresh after each release cycle, not only
 when "Six gates" type errors surface.
+
+## J-0.8.20 — Gate D layer 3: memory_system lacks memory:write
+
+**Discovered**: 2026-09-23, extended review session
+**Class**: Policy gap / least-privilege correction
+**Related**: J-0.8.21 (bootstrap memory), J-0.8.28 (G0.ZZ subjects.json)
+
+**Symptom**:
+  tests/gate_d_benchmark.py fails with:
+    gate.MemoryGateError: denied: memory:write
+
+  Even after J-0.8.21 (bootstrap registers memory branch
+  + memory_system subject).
+
+**Three layers**:
+
+  Layer 1 (fixed in v0.7.14, J-0.8.21):
+    memory branch not registered.
+  Layer 2 (fixed in v0.7.14, J-0.8.21):
+    memory_system subject not present.
+  Layer 3 (this finding):
+    memory_system subject exists with role 'system',
+    but role 'system' lacks 'memory:write'.
+
+**Root cause**:
+  memory/gate.py:82 sets:
+    subj = subject or "memory_system"
+  And memory/semantic/graph.py:100 calls:
+    gate.execute("memory:write", ...)
+  With subject = memory_system.
+  subjects.json maps memory_system -> role 'system'.
+  policy/policies/default.yaml role 'system':
+    permissions: audit:read, audit:write, policy:read,
+                 memory:read
+    (no memory:write)
+  Result: memory:write is denied.
+
+**Why it was hidden**:
+  - Gate D not in CI (J-0.8.26).
+  - V0.4-V0.7 do not exercise memory:write.
+  - The 'system' role looked sufficient.
+
+**Impact**: MEDIUM.
+  - Gate D does not work.
+  - memory/gate.py default subject fails on write.
+  - Does NOT affect V0.4-V0.7.
+
+**Fix** (this commit, v0.7.16):
+
+  Add a new role 'memory_system' to default.yaml:
+    memory_system:
+      trust_min: 0.8
+      permissions:
+        - "memory:read"
+        - "memory:write"
+        - "memory:graph_traverse"
+        - "memory:trail_reinforce"
+        - "memory:swarm_query"
+
+  Update bootstrap.py DEFAULT_SUBJECTS:
+    memory_system: role "memory_system" (was "system")
+
+  Update authorization/subjects.json likewise.
+
+  Update tests/gate_v07/test_g0ZZ_kernel_untouched.py:
+    add "policy/policies/default.yaml" to ALLOWED_EXCEPTIONS.
+
+  FREEZE_v0.7.16 documents the deviation.
+
+**Cost estimate**: 2-3 hours.
+
+**Status**: CLOSED (2026-09-29).
+
+**Scientific note**: This is the 4th scope-lock
+exception (after J-0.8.3, J-0.8.5, J-0.8.28). The
+pattern: least-privilege fails when a role is
+reused for two distinct purposes. Solution: separate
+roles for separate concerns.
+
+## J-0.8.39 — Policy YAML edit requires explicit re-signing
+
+**Discovered**: 2026-09-29, during J-0.8.20 fix
+**Class**: Operational / integrity protocol
+**Related**: J-0.8.20 (policy memory:write), J-0.8.6 (policy signature invalid after bootstrap)
+
+**Symptom**:
+  After editing policy/policies/default.yaml (to add
+  role 'memory_system' for J-0.8.20), the following
+  failed:
+
+    python tests/gate_d_benchmark.py
+    -> RuntimeError: policy signature INVALID — possible tamper
+
+    python tests/gate_v05/run_all.py
+    -> V0.5 gates: 2/5 closed
+       (G0.14 Governed Execution FAILED)
+       (G0.15 Trust Dynamics FAILED)
+       (G0.17 Kill Switch FAILED)
+
+  After running `python bootstrap.py`, everything
+  worked again:
+
+    policy loaded OK
+    roles: [owner, system, memory_system, agent_high,
+            agent_mid, agent_low]
+    V0.5 gates: 5/5 closed
+    V0.7 gates: 19/19 closed
+    Gate D: runs successfully
+
+**Root cause**:
+  policy_store.load() verifies the YAML hash against
+  the signature in default.yaml.sig. Editing the YAML
+  invalidates the signature. The signature is NOT
+  regenerated automatically.
+
+  bootstrap.py has step_policy_signature() which:
+    - reads default.yaml
+    - computes its SHA-256
+    - checks the signature
+    - re-signs if invalid
+
+  But bootstrap.py is not automatically called after
+  YAML edits.
+
+**Why it was hidden**:
+  - The signature error message ("policy signature
+    INVALID") does not mention YAML editing.
+  - V0.5/V0.7 failures appeared unrelated (G0.14,
+    G0.15, G0.17 all fail).
+  - Only by running bootstrap was the fix obvious.
+
+**Impact**: MEDIUM (operational).
+  - Any contributor editing policy/ will encounter this.
+  - The failure is not obvious from the error message.
+  - The fix is one command (bootstrap.py).
+
+**Resolution** (this commit):
+
+  Documented. No code fix in this commit.
+  Future work: could add a warning in policy_store.load()
+  suggesting "run bootstrap.py if policy was recently
+  edited." Or, could integrate re-signing into the CI
+  workflow (but that requires owner key, which is not
+  available in CI).
+
+  Alternative considered: do not require signatures at
+  all. Rejected: signatures are the project's
+  trust anchor (J-0.8.6 context).
+
+  **Rule** (operational):
+    After editing any policy/policies/*.yaml file,
+    run `python bootstrap.py` before testing.
+    This is now documented here.
+
+**Cost estimate**: 0 (documented only).
+
+**Status**: CLOSED (2026-09-29).
+
+**Scientific note**: This is the 16th finding closing
+without code change. It highlights a tension between
+integrity (signing) and usability (editing). The
+project chose integrity. The cost is one extra step
+(bootstrap) per YAML edit. A trade-off that is
+acceptable but should be documented.
