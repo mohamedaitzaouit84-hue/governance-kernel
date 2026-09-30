@@ -15,6 +15,14 @@ TESTS = [
 
 
 def main():
+    # J-0.8.44: ensure kill switch is not active on entry
+    repo = Path(__file__).resolve().parent.parent.parent
+    kill_flag = repo / "control" / "kill.flag"
+    if kill_flag.exists():
+        kill_flag.unlink()
+        print("[J-0.8.44] Cleared stale kill.flag before V0.5 gates.")
+        print()
+
     print("=" * 50)
     print("V0.5 — Gate Report")
     print("=" * 50)

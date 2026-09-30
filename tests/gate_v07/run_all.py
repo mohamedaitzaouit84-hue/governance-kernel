@@ -38,6 +38,13 @@ def main():
         _sp.call([_sys.executable, str(_bs)], cwd=str(_repo))
         print()
 
+    # J-0.8.44: ensure kill switch is not active on entry
+    _flag = _repo / "control" / "kill.flag"
+    if _flag.exists():
+        _flag.unlink()
+        print("[J-0.8.44] Cleared stale kill.flag before V0.7 gates.")
+        print()
+
     print("=" * 60)
     print("V0.7 — Red Team + Performance + Real Agents + Delegation — Gate Report")
     print("=" * 60)

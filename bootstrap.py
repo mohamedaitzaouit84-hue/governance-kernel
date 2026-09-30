@@ -232,6 +232,23 @@ def step_register_memory_branch():
             print("         " + line)
 
 
+def step_reset_kill_switch():
+    """Remove control/kill.flag if present (J-0.8.44).
+
+    G0.17 activates the kill switch by writing control/kill.flag.
+    If a prior test run aborted before clearing it, every
+    subsequent V0.5 run fails at G0.14/15/17.
+    bootstrap.py clears the flag so a fresh clone starts from
+    a clean, deterministic state.
+    """
+    flag = REPO / "control" / "kill.flag"
+    if flag.exists():
+        flag.unlink()
+        print("  [FIX ] control/kill.flag cleared")
+    else:
+        print("  [SKIP] control/kill.flag not present")
+
+
 def step_policy_signature():
     """Re-sign default.yaml if signature is invalid.
 
@@ -286,6 +303,7 @@ def main():
     step_subjects()
     step_register_branches()
     step_register_memory_branch()
+    step_reset_kill_switch()
     step_policy_signature()
 
     print()
