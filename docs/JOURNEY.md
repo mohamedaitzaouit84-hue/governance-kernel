@@ -3317,3 +3317,111 @@ and must be enumerated exhaustively.
 **Cost estimate**: 30 minutes.
 
 **Status**: OPEN (pending FREEZE_v0.7.18).
+
+---
+
+## J-0.8.26 — V0.3 is intentionally excluded from CI
+
+**Discovered**: 2026-09-26, during V0.3 review session
+**Class**: CI coverage / Test design
+**Related**: J-0.8.23 (Gate D not in CI), J-0.8.33 (G0.7 report inaccuracy), J-0.8.34 (V0.3_SUMMARY mismatch)
+
+**Symptom**:
+  tests/gate_v03/run_all.py exists and runs 5 tests.
+  But .github/workflows/test.yml contains no invocation
+  of V0.3. Verification:
+
+    $ grep -n "gate_v03" .github/workflows/test.yml
+    (empty)
+
+  V0.3 was never executed in CI since 2026-09-14.
+
+**Root cause**:
+  V0.3 contains exploratory tests whose outcomes are
+  intentionally non-binary. run_all.py documents this
+  explicitly in its own docstring:
+
+    "This runner is for manual verification. It is NOT
+     in CI. Reason: expected partial failures;
+     CI must be binary."
+
+  Individual test verdicts on a fresh run:
+
+    G0.7  Policy Separation         MAY FAIL in drift
+                                    HOLDS in noise
+    G0.9  Statistical Repeatability FAILED (v1 threshold)
+    G0.9 v2 Repeatability (std)     FAILED (v2 threshold)
+    G0.9 v3 Same-seed Repeatability CLOSED (100%)
+    G0.11 Counterfactual            FAILED (coupled)
+
+  Documented interpretation (docs/V0.3_SUMMARY.md,
+  2026-09-14):
+
+    "الحالة: مكتمل تقنياً (2/3 gates CLOSED,
+     1 finding documented)"
+
+  The three legitimate outcomes of V0.3 are:
+    - CLOSED (architecture and policy are separable)
+    - MAY FAIL in drift (documented in G07 report)
+    - FAILED as written (counterfactual finding,
+      documented in G11 report)
+
+  None of these map to a binary pass/fail, which is
+  what CI requires.
+
+**Why it was hidden**:
+  - CI convention established in V0.4+ (tests/gate_vN/ +
+    run_all.py + workflow entry) was not retroactively
+    applied to V0.1-V0.3.
+  - V0.3 was closed before CI existed.
+  - The run_all.py docstring documents the exclusion,
+    but this documentation is not surfaced in
+    HANDOVER.md or README.md.
+  - Reviewers reading only .github/workflows/test.yml
+    would conclude V0.3 was forgotten.
+
+**Impact**: LOW for correctness; MEDIUM for transparency.
+  - Kernel behavior is not affected.
+  - V0.3 findings are already documented in
+    docs/V0.3_SUMMARY.md and three G0 reports.
+  - The gap is documentation, not coverage.
+  - Does NOT affect CI reliability (CI remains binary).
+  - Does NOT affect kernel logic.
+
+**Resolution** (chosen 2026-09-30):
+  WONTFIX. V0.3 remains excluded from CI by design.
+
+  Rationale:
+    1. run_all.py explicitly states the exclusion.
+    2. "CI must be binary" is a project rule
+       (see CHARTER.md).
+    3. V0.3 conclusions are already archived in
+       docs/V0.3_SUMMARY.md and three GATES_v0.3_G*
+       reports.
+    4. Running V0.3 in CI would either (a) make CI
+       permanently red (if strict), or (b) require
+       rewriting the run_all.py verdict logic to
+       interpret drift-only failures as CLOSED,
+       which would weaken the meaning of the tests.
+
+  Documentation fix (to be applied in v0.7.18):
+    - Add V0.3 to HANDOVER.md under a new section:
+      "Tests not in CI (by design)".
+    - Include the rationale and a pointer to
+      docs/V0.3_SUMMARY.md.
+    - Cross-reference J-0.8.26.
+
+**Cost estimate**: 30 minutes (documentation only).
+
+**Status**: WONTFIX (2026-09-30) — closed by decision,
+pending HANDOVER.md update in v0.7.18.
+
+**Scientific note**:
+  "Not in CI" is not the same as "forgotten". The
+  distinction requires explicit documentation. This
+  finding closes the loop that J-0.8.23 opened: the
+  pre-CI era of the project (V0.1-V0.3) produced
+  artifacts whose verification model differs from
+  the one the project adopted later. Both models are
+  legitimate; the project's task is to say which is
+  which, not to retrofit one onto the other.
