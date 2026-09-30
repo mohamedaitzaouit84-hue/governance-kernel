@@ -8,9 +8,7 @@ tags:
   - deterministic governance
   - reproducibility
 authors:
-  - name: Ahmed Ait Zaouit
-    given-names: Ahmed
-    family-names: Ait Zaouit
+  - name: Ahmed Ait-Zaouit
     orcid: 0009-0007-3278-5577
     affiliation: 1
 affiliations:
