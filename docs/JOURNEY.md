@@ -3518,3 +3518,82 @@ pending HANDOVER.md update in v0.7.18.
   which is exactly the frame JOSS-style software review
   rewards. Recording it here because the value is in the
   sequencing decision, not in the comment itself.
+
+---
+
+## J-0.8.48 — Misattribution: 4ms and 790ms are not comparable
+
+**Discovered**: 2026-09-30, during diagnosis of J-0.8.40
+**Class**: Internal record accuracy
+**Related**: J-0.8.40 (misattributed "Gate D perf regression"),
+           J-0.8.47 (external review that surfaced the question)
+
+**Symptom**:
+  The session handover (2026-09-29) contained:
+
+    "J-0.8.40 (candidate) — Gate D perf regression
+     4ms -> 790ms per op"
+
+  This framing was repeated in the roadmap discussions
+  and amplified by an external reviewer on r/kubernetes,
+  who reasonably asked:
+
+    "4ms to 790ms regression is brutal. Is the overhead
+     coming from the signature verification step or
+     somewhere else in the chain?"
+
+**Root cause**:
+  The two numbers are from different sources and measure
+  different things:
+
+    - 4ms  = add_node on 10 nodes (Gate D report,
+             2026-09-13, docs/GATE_D_report.md line 39:
+             "10 | 4.34ms | 6.14ms | 7.93ms | 0.55ms")
+
+    - 790ms = total V0.5 runtime across 5 gates
+              (JOURNEY.md line 2276, 2026-09-28:
+             "V0.5: 0.81s (min 0.79, max 0.84)")
+
+  Comparing the two is not meaningful. No regression
+  exists. Gate D itself grows linearly with node count
+  (10 -> 100 nodes = 10.3x for add_node), as documented
+  in the Gate D report.
+
+**Why it was hidden**:
+  - The session handover compressed the two numbers into
+    one line without stating units or context.
+  - Readers (including the author, briefly) treated them
+    as the same metric.
+  - The external reviewer had no way to see the two
+    underlying sources; only the handover summary.
+
+**Impact**: LOW for code; MEDIUM for the record.
+  - No code changed.
+  - No test regressed.
+  - The roadmap was briefly reordered around a
+    non-existent problem (J-0.8.40 was elevated to
+    "diagnose next" in J-0.8.47).
+  - Does NOT affect kernel behavior.
+
+**Resolution**:
+  1. J-0.8.40 is reclassified: no regression exists.
+     It is closed as "misattributed".
+  2. This entry (J-0.8.48) documents the correction.
+  3. Future handovers must state units and sources for
+     any performance number.
+
+**Cost estimate**: 15 minutes (documentation only).
+
+**Status**: CLOSED (2026-09-30).
+
+**Scientific note**:
+  This is a small but instructive case. A number without
+  units and a source is not a number; it is a rumor. The
+  project's rule "Every number sourced" (Golden Rule 7)
+  covers this, but the rule was applied to test outputs
+  and not to summary documents. The lesson generalizes:
+  handover documents are also records, and they carry the
+  same evidentiary burden.
+
+  The external reviewer's question was correct given the
+  information available. The error was entirely internal.
