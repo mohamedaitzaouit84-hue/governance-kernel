@@ -3437,3 +3437,84 @@ pending HANDOVER.md update in v0.7.18.
   the one the project adopted later. Both models are
   legitimate; the project's task is to say which is
   which, not to retrofit one onto the other.
+
+---
+
+## J-0.8.47 — External feedback: Red Team before SDK, and Gate D perf diagnosis
+
+**Discovered**: 2026-09-30, r/kubernetes comment by u/AltruisticPainter365
+**Class**: External review / Sequencing
+**Related**: J-0.8.32 (SDK), J-0.8.40 (Gate D perf), J-0.8.23 (Gate D in CI)
+
+**Source**:
+  Comment on r/kubernetes thread about the project.
+  Reviewer identified as a practitioner ("k8s maintainer"-adjacent
+  context). Three points raised, all technical, all constructive.
+
+**Point 1 — Gate D layer-by-layer debugging**:
+  "The layer-by-layer debug on Gate D is textbook why
+  deterministic kernels are a nightmare to get right. Most
+  people would've papered over that with a broader catch-all
+  permission and called it done, but actually tracking each
+  missing piece means the audit trail stays clean."
+
+  Review confirms the design choice. No action required.
+
+**Point 2 — Red Team before SDK**:
+  "I'd push for red team before SDK. 54/54 blocked on attacks
+  you wrote yourself tells you the system works under known
+  conditions, but an external set of eyes trying to break it
+  will surface assumptions you didn't know you baked in.
+  SDK first risks building an interface on top of a foundation
+  that hasn't been properly stressed."
+
+  This reorders the roadmap. Previously:
+
+    v0.7.18 -> SDK (J-0.8.32) -> Red Team -> arXiv
+
+  Revised:
+
+    v0.7.18 -> J-0.8.40 diagnosis -> Red Team -> SDK -> arXiv
+
+  Rationale: 54/54 is self-authored. An SDK built on a
+  foundation that has not been externally stressed risks
+  cementing assumptions. Red Team first.
+
+**Point 3 — Gate D performance regression**:
+  "Also that 4ms to 790ms regression is brutal. Is the
+  overhead coming from the signature verification step or
+  somewhere else in the chain?"
+
+  This surfaces J-0.8.40 as a HIGH-priority diagnosis task
+  rather than a candidate. The question is precise: which
+  step in the chain introduces the overhead?
+
+**Why it matters**:
+  External review at this stage is rare for the project.
+  The feedback is specific, actionable, and grounded in
+  operational experience (r/kubernetes practitioners run
+  systems where a 200x regression matters). The reordering
+  of priorities is significant: SDK (J-0.8.32) is deferred
+  until after Red Team.
+
+**Impact**: MEDIUM (strategic).
+  - Does NOT affect code.
+  - Reorders the roadmap.
+  - Raises J-0.8.40 from "candidate" to "diagnose next".
+  - Opens the door for potential external Red Team.
+
+**Action items**:
+  1. Diagnose J-0.8.40 (Gate D perf): identify the step
+     that introduces 4ms -> 790ms overhead.
+  2. Prepare Red Team protocol (external review).
+  3. Defer SDK (J-0.8.32) until Red Team completes.
+
+**Status**: OPEN (action items in progress).
+
+**Scientific note**:
+  The most useful external feedback the project has received
+  to date came from a practitioner, not from a researcher.
+  The reviewer's frame was "what breaks in production",
+  which is exactly the frame JOSS-style software review
+  rewards. Recording it here because the value is in the
+  sequencing decision, not in the comment itself.
