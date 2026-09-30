@@ -3062,7 +3062,10 @@ and must be enumerated exhaustively.
 
 **Cost estimate**: 2 hours.
 
-**Status**: OPEN (pending FREEZE_v0.7.18).
+**Status**: CLOSED (2026-09-30) — fixed in commit d136407.
+  See FREEZE_v0.7.18.
+  bootstrap.py now verifies pub/priv consistency and
+  creates default.yaml.sig when missing.
 
 **Scientific note**:
   This is a classic reproducibility gap: state that
@@ -3147,7 +3150,10 @@ and must be enumerated exhaustively.
 
 **Cost estimate**: 2 hours.
 
-**Status**: OPEN (pending FREEZE_v0.7.18).
+**Status**: CLOSED (2026-09-30) — fixed in commit 045d469.
+  See FREEZE_v0.7.18.
+  bootstrap.py and both run_all.py drivers now reset
+  control/kill.flag before running gates.
 
 ---
 
@@ -3237,7 +3243,10 @@ and must be enumerated exhaustively.
 
 **Cost estimate**: 1 hour.
 
-**Status**: OPEN (pending FREEZE_v0.7.18).
+**Status**: CLOSED (2026-09-30) — fixed in commit 2b0a474.
+  See FREEZE_v0.7.18.
+  docs/HANDOVER.md now has a 'Fresh Start Protocol'
+  section.
 
 ---
 
@@ -3316,7 +3325,10 @@ and must be enumerated exhaustively.
 
 **Cost estimate**: 30 minutes.
 
-**Status**: OPEN (pending FREEZE_v0.7.18).
+**Status**: CLOSED (2026-09-30) — fixed in commit 2b0a474.
+  See FREEZE_v0.7.18.
+  identity/owner_key.pub is now gitignored and untracked;
+  bootstrap.py generates the pair on every clone.
 
 ---
 
