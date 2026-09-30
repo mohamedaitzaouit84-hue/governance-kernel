@@ -2935,3 +2935,385 @@ It reveals a general lesson: when a protected file is
 intentionally modified, its side effects (signatures,
 compiled artifacts, logs) may also count as changes
 and must be enumerated exhaustively.
+
+---
+
+## J-0.8.43 — bootstrap.py does not verify pub/priv consistency and does not create .sig when missing
+
+**Discovered**: 2026-09-30, fresh-clone diagnostic in Termux
+**Class**: Packaging / Reproducibility
+**Related**: J-0.8.28 (bootstrap subjects), J-0.8.32 (SDK roadmap)
+
+**Symptom**:
+  On a clean clone, running:
+
+    python bootstrap.py
+    python tests/gate_v05/run_all.py
+    python tests/gate_v07/run_all.py
+
+  produces:
+
+    V0.5 gates: 1/5 closed  (G0.13/14/15/17 FAILED)
+    V0.7 gates: 16/19 closed (G0.31/32/33 FAILED)
+
+  G0.13 reports:
+    FAIL: file_agent_1 signature invalid
+    FAIL: compute_agent_1 signature invalid
+    FAIL: query_agent_1 signature invalid
+
+  Manual verification confirms:
+    MATCH between owner_key.priv and owner_key.pub: False
+
+**Root cause** (two independent sub-bugs in bootstrap.py):
+
+  Sub-bug A — owner_key.pub is not re-derived:
+    bootstrap.py::step_owner_key() checks only for the
+    existence of owner_key.priv:
+
+      if priv.exists():
+          print("  [SKIP] owner_key.priv already exists")
+      else:
+          root.generate_owner_key()
+
+    When owner_key.priv exists but owner_key.pub does not
+    match it (e.g. after any operation that restores
+    owner_key.pub from git), bootstrap does not detect
+    the mismatch. All signatures produced by root.sign()
+    use the private key, but root.verify() loads the
+    (mismatched) public key. Verification fails.
+
+  Sub-bug B — default.yaml.sig is not created when absent:
+    bootstrap.py::step_policy_signature() contains:
+
+      if not sig_file.exists():
+          print("  [SKIP] default.yaml.sig not found")
+          return
+
+    If default.yaml.sig is absent (e.g. after a fresh
+    clone that excluded it, or after user deletion),
+    bootstrap returns without creating a new signature.
+    The file remains absent; policy_store.load() then
+    fails.
+
+**Scenario that exposes both sub-bugs**:
+
+    1. Clone repository.
+       - owner_key.pub exists (from git)
+       - owner_key.priv missing (gitignored)
+       - default.yaml.sig exists (from git)
+
+    2. Run bootstrap.py
+       - owner_key.priv missing -> generate_owner_key()
+         -> writes BOTH priv and pub (aligned)
+       - default.yaml.sig exists -> [SKIP] (valid
+         against the new pub, because generate also
+         updated pub)
+
+    3. Run any V0.5 test
+       - creates branches/registry.jsonl signed with
+         the new key
+
+    4. Any subsequent operation that restores
+       owner_key.pub from git (e.g. git checkout,
+       git reset, or a stale backup restoration):
+       - owner_key.pub reverts to the git version
+       - owner_key.priv remains local
+       - MISMATCH is created silently
+
+    5. Run bootstrap.py again
+       - priv exists -> [SKIP] -> does not detect
+         mismatch
+       - .sig not present (if it was removed) ->
+         [SKIP] -> does not recreate
+       - Result: broken state
+
+**Why it was hidden**:
+  - All prior tests ran on cumulative clones where
+    owner_key.priv and owner_key.pub were already
+    aligned (created in a single generate_owner_key
+    call).
+  - CI clones fresh and runs from git state, where
+    both priv is generated once and pub is written
+    by the same call, hence aligned.
+  - No prior test exercised the path:
+    fresh clone -> test -> key change -> test again.
+
+**Impact**: HIGH for reproducibility.
+  - Clean Termux clone cannot reach 5/5 + 19/19
+    without manual state cleanup.
+  - Claim "Termux verified for v0.7.17" was made on a
+    cumulative clone, not a fresh one.
+  - Does NOT affect CI (keys come from git, aligned).
+  - Does NOT affect kernel logic.
+
+**Fix plan** (FREEZE_v0.7.18):
+  Sub-fix A — bootstrap verifies pub/priv:
+    - Load owner_key.priv.
+    - Derive the corresponding public key.
+    - Compare with the content of owner_key.pub.
+    - If they differ, write the derived public key
+      back to owner_key.pub.
+
+  Sub-fix B — bootstrap creates .sig when missing:
+    - If default.yaml.sig does not exist, sign
+      default.yaml and write the signature.
+
+  Both fixes are additive and idempotent.
+
+**Cost estimate**: 2 hours.
+
+**Status**: OPEN (pending FREEZE_v0.7.18).
+
+**Scientific note**:
+  This is a classic reproducibility gap: state that
+  depends on the order of prior operations. The bug
+  was masked because every prior test ran on a clone
+  that had been bootstrapped exactly once. The claim
+  of Termux verification was therefore a claim about
+  a specific trajectory, not about the initial state.
+
+---
+
+## J-0.8.44 — control/kill.flag persists between test runs
+
+**Discovered**: 2026-09-30, fresh-clone diagnostic in Termux
+**Class**: Test isolation / Reproducibility
+**Related**: J-0.8.43 (same diagnostic session)
+
+**Symptom**:
+  After a first run of V0.5 (which exercises G0.17
+  Kill Switch), a second run of V0.5 produces:
+
+    G0.14 Governed Execution        FAILED
+    G0.15 Trust Dynamics            FAILED
+    G0.17 Kill Switch               FAILED
+
+  G0.17 prints:
+    WARN: kill switch already active — aborting test
+
+  G0.14 and G0.15 fail with:
+    governed_action_v05.ActionDenied: kill switch active
+
+**Root cause**:
+  control/kill.flag is the persistent on-disk marker
+  of the kill switch state. It is gitignored.
+
+  G0.17 test_g017_killswitch.py activates the kill
+  switch (writing control/kill.flag) to verify the
+  mechanism works. On a normal run, it deactivates
+  afterwards.
+
+  However, if the kill switch is already active on
+  entry (e.g. from a previously aborted test run),
+  the test prints the WARN and returns without
+  resetting state.
+
+  bootstrap.py does not clean control/kill.flag.
+  The run_all.py drivers do not reset it either.
+
+  Result: kill.flag persists across runs, poisoning
+  every subsequent V0.5 execution.
+
+**Why it was hidden**:
+  - CI starts from a clean checkout each time
+    (kill.flag absent).
+  - Prior Termux sessions ran a single clean sequence
+    and never re-ran V0.5 on the same clone.
+  - The failure mode (second run) was never exercised.
+
+**Impact**: HIGH for reproducibility.
+  - A second V0.5 run in the same clone always fails.
+  - User sees 3/5 instead of 5/5 and cannot
+    distinguish between "kernel broken" and
+    "stale state".
+  - Does NOT affect CI.
+  - Does NOT affect kernel logic.
+
+**Fix plan** (FREEZE_v0.7.18):
+  Option A — run_all.py resets kill switch before tests:
+    - Add an explicit reset call in
+      tests/gate_v05/run_all.py before G0.13.
+    - Same for tests/gate_v07/run_all.py.
+
+  Option B — bootstrap.py cleans control/kill.flag:
+    - Delete control/kill.flag if present.
+    - Print: "[FIX] kill.flag cleared".
+
+  Option C — test_g017 self-heals:
+    - On entry, if kill switch is already active,
+      deactivate then run fresh.
+
+  Recommended: A + B.
+
+**Cost estimate**: 2 hours.
+
+**Status**: OPEN (pending FREEZE_v0.7.18).
+
+---
+
+## J-0.8.45 — HANDOVER.md does not document Fresh Start Protocol
+
+**Discovered**: 2026-09-30, fresh-clone diagnostic in Termux
+**Class**: Documentation
+**Related**: J-0.8.43, J-0.8.44, J-0.8.46
+
+**Symptom**:
+  docs/HANDOVER.md "Session start protocol (first 5
+  minutes)" contains:
+
+    1. Read this file (docs/HANDOVER.md)
+    2. Run: python bootstrap.py
+    3. Run: python tests/gate_v05/run_all.py
+    4. Run: python tests/gate_v07/run_all.py
+    5. Confirm: 5/5 + 19/19
+
+  Following this protocol on a genuinely fresh clone
+  fails (see J-0.8.43, J-0.8.44). The protocol is
+  incomplete.
+
+**Root cause**:
+  The protocol assumes a cumulative environment where
+  identity/owner_key.*, branches/registry.jsonl and
+  control/kill.flag are already in a consistent state.
+
+  On a genuinely fresh clone, the following local state
+  must be cleared before bootstrap can produce a
+  consistent environment:
+
+    - identity/owner_key.priv       (stale key)
+    - identity/owner_key.pub        (stale pub)
+    - identity/root_state.json      (stale root)
+    - branches/registry.jsonl       (stale signatures)
+    - control/kill.flag             (stale kill state)
+
+  None of this is documented. The claim in the session
+  handover "Termux verified for v0.7.17" is therefore
+  incomplete: it refers to a cumulative clone, not a
+  fresh one.
+
+**Why it was hidden**:
+  - The session handover itself is the documentation,
+    and it was written from a cumulative environment.
+  - No new contributor has attempted a fresh start.
+  - CI works because it clones fresh AND runs from
+    git state (keys aligned by construction).
+
+**Impact**: MEDIUM for onboarding; HIGH for the claim
+  of reproducibility.
+  - New contributors will fail to reproduce.
+  - Claim "3 environments verified" needs qualification:
+      CI = fresh (works by construction).
+      Termux = cumulative (works after bootstrap on a
+               reused clone, with state caveats).
+      Colab = unverified for v0.7.17.
+  - Does NOT affect kernel logic.
+
+**Fix plan** (FREEZE_v0.7.18):
+  1. Add explicit "Fresh Start Protocol" section to
+     docs/HANDOVER.md:
+
+       ## Fresh Start Protocol
+       (use after: fresh clone, key rotation, or any
+        time V0.5/V0.7 fails unexpectedly)
+
+       cd governance-kernel
+       rm -f identity/owner_key.priv
+       rm -f identity/owner_key.pub
+       rm -f identity/root_state.json
+       rm -f branches/registry.jsonl
+       rm -f control/kill.flag
+       python bootstrap.py
+       python tests/gate_v05/run_all.py
+       python tests/gate_v07/run_all.py
+
+  2. Distinguish explicitly between:
+       - "Fresh clone verification"
+       - "Cumulative clone verification"
+
+  3. Update the reproducibility table to say:
+       - CI: fresh clone + fresh run
+       - Termux: cumulative clone + bootstrap + run
+       - Colab: TBD for v0.7.17
+
+**Cost estimate**: 1 hour.
+
+**Status**: OPEN (pending FREEZE_v0.7.18).
+
+---
+
+## J-0.8.46 — identity/owner_key.pub is tracked in git while owner_key.priv is gitignored
+
+**Discovered**: 2026-09-30, fresh-clone diagnostic in Termux
+**Class**: Packaging / Reproducibility
+**Related**: J-0.8.43 (same root diagnostic session)
+
+**Symptom**:
+  After a fresh clone:
+
+    $ git status --short
+    (clean)
+
+    $ ls identity/
+    owner_key.pub         <- from git
+    (owner_key.priv absent)
+
+  Running bootstrap.py creates owner_key.priv and
+  writes a matching owner_key.pub. Subsequent git
+  operations that reset owner_key.pub (git checkout,
+  git reset, restoring a stale backup) silently
+  produce a MISMATCH between priv and pub.
+
+**Root cause**:
+  identity/owner_key.pub is committed to git, while
+  identity/owner_key.priv is gitignored (correctly,
+  for safety — see bootstrap.py docstring).
+
+  This asymmetry creates an inherent divergence risk:
+  the committed pub corresponds to the original
+  developer's key, not to any key that a fresh
+  clone will generate.
+
+  bootstrap.py::step_owner_key() does not detect the
+  divergence (see J-0.8.43, Sub-bug A).
+
+**Why it was hidden**:
+  - CI always runs from the same git state, so the
+    tracked pub and the locally-generated priv are
+    created in the same bootstrap pass and remain
+    aligned throughout the CI run.
+  - Prior Termux sessions never performed a git
+    operation on owner_key.pub after bootstrap.
+
+**Impact**: HIGH for cross-clone reproducibility.
+  - A fresh clone is guaranteed to have:
+      tracked pub (original developer)
+      no priv
+    When bootstrap generates a new priv, the pub
+    must be rewritten. Any subsequent git operation
+    on pub can silently restore the original,
+    recreating the mismatch.
+  - Does NOT affect CI (single-pass).
+  - Does NOT affect kernel logic.
+
+**Fix plan** (FREEZE_v0.7.18):
+  Option A — remove owner_key.pub from git:
+    - Add identity/owner_key.pub to .gitignore.
+    - git rm --cached identity/owner_key.pub.
+    - bootstrap.py always writes pub alongside priv
+      (already does; verified after J-0.8.43 fix).
+    - Consequence: fresh clones always generate
+      their own key pair.
+
+  Option B — keep owner_key.pub in git but verify:
+    - Implement J-0.8.43 Sub-fix A (pub/priv
+      consistency check in bootstrap).
+    - Document explicitly that the tracked pub is
+      only a placeholder.
+
+  Recommended: A (cleaner, avoids the asymmetry
+  entirely). If A is rejected for legacy reasons,
+  fall back to B.
+
+**Cost estimate**: 30 minutes.
+
+**Status**: OPEN (pending FREEZE_v0.7.18).
