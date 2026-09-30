@@ -43,14 +43,64 @@ DEFAULT_SUBJECTS = {
 
 
 def step_owner_key():
-    """Generate owner key if missing. Return fingerprint."""
+    """Generate owner key if missing. Verify pub/priv consistency.
+
+    J-0.8.43: a previous version only checked for the existence
+    of owner_key.priv. If owner_key.pub had been restored from
+    git (or otherwise diverged), bootstrap silently left a
+    MISMATCH behind, breaking every signature verification.
+    """
     priv = REPO / "identity" / "owner_key.priv"
-    if priv.exists():
-        print("  [SKIP] owner_key.priv already exists")
-    else:
+    pub = REPO / "identity" / "owner_key.pub"
+
+    if not priv.exists():
         print("  [GEN ] owner_key.priv missing — generating")
         root.generate_owner_key()
+        return root.fingerprint()
+
+    print("  [SKIP] owner_key.priv already exists")
+
+    if not pub.exists():
+        print("  [FIX ] owner_key.pub missing — re-deriving from priv")
+        _rewrite_pub_from_priv(priv, pub)
+        return root.fingerprint()
+
+    if _pub_matches_priv(priv, pub):
+        print("  [OK  ] owner_key.pub matches priv")
+    else:
+        print("  [FIX ] owner_key.pub does not match priv — re-deriving")
+        _rewrite_pub_from_priv(priv, pub)
+
     return root.fingerprint()
+
+
+def _pub_matches_priv(priv_path, pub_path):
+    """Return True iff pub_path is the public key derived from priv_path."""
+    from cryptography.hazmat.primitives import serialization
+    try:
+        priv_key = serialization.load_pem_private_key(
+            priv_path.read_bytes(), password=None
+        )
+        derived = priv_key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        return derived == pub_path.read_bytes()
+    except Exception:
+        return False
+
+
+def _rewrite_pub_from_priv(priv_path, pub_path):
+    """Overwrite pub_path with the public key derived from priv_path."""
+    from cryptography.hazmat.primitives import serialization
+    priv_key = serialization.load_pem_private_key(
+        priv_path.read_bytes(), password=None
+    )
+    derived = priv_key.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    pub_path.write_bytes(derived)
 
 
 def step_root_state():
@@ -198,12 +248,15 @@ def step_policy_signature():
     if not policy_file.exists():
         print("  [SKIP] default.yaml not found")
         return
-    if not sig_file.exists():
-        print("  [SKIP] default.yaml.sig not found")
-        return
-
     text = policy_file.read_text(encoding="utf-8")
     policy_hash = hashlib.sha256(text.encode("utf-8")).hexdigest().encode("utf-8")
+
+    if not sig_file.exists():
+        print("  [GEN ] default.yaml.sig missing — creating")
+        new_sig = root.sign(policy_hash)
+        sig_file.write_text(new_sig.hex(), encoding="utf-8")
+        print("  [FIX ] default.yaml.sig created")
+        return
 
     try:
         sig = bytes.fromhex(sig_file.read_text(encoding="utf-8").strip())
