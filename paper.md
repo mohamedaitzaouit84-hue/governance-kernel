@@ -30,8 +30,9 @@ signatures, `pyyaml` for signed policy files), and it provides:
 
 - **Separation of concerns** between information, policy, and
   execution nodes (`kernel/separation/`), verified in V0.3.
-- **Signed policy files** (YAML with Ed25519 signatures over the
-  file hash) that a kernel refuses to load when the signature is
+- **Signed policy files** (YAML with Ed25519 signatures
+  [@ed25519] over the file hash, which itself uses SHA-256
+  [@sha256]) that a kernel refuses to load when the signature is
   invalid or missing.
 - A **hash-chained audit log** where each record commits to the
   previous one, so any tampering is detectable.
