@@ -1,0 +1,55 @@
+cff-version: 1.2.0
+message: "If you use Governance Kernel in your research, please cite it as below."
+title: "Governance Kernel: A deterministic governance layer for AI agents"
+abstract: >-
+  Governance Kernel is a deterministic governance layer that
+  runs before AI agents act. Unlike post-hoc monitoring
+  approaches, the kernel decides permissions, trust levels,
+  and resource bounds before any agent action is executed.
+  The kernel provides separation of concerns (information /
+  policy / node), signed policies, a hash-chained audit log,
+  a kill switch, a resource governor, and multi-agent
+  consensus primitives. It is verified across three
+  environments (Termux, GitHub Actions CI, Google Colab)
+  and includes pre-registered thresholds and a reproducible
+  benchmark suite (V0.4: 54/54, PRI = 1.0000).
+authors:
+  - family-names: "Ait Zaouit"
+    given-names: "Ahmed"
+    orcid: "https://orcid.org/0009-0007-3278-5577"
+    alias: "mohamedaitzaouit84-hue"
+    affiliation: "Independent researcher, Morocco"
+version: "0.7.18"
+date-released: "2026-09-30"
+license: "AGPL-3.0-or-later"
+repository-code: "https://github.com/mohamedaitzaouit84-hue/governance-kernel"
+url: "https://github.com/mohamedaitzaouit84-hue/governance-kernel"
+keywords:
+  - "AI governance"
+  - "AI agents"
+  - "agent actions"
+  - "deterministic governance"
+  - "trust ladder"
+  - "audit log"
+  - "kill switch"
+  - "resource governor"
+  - "multi-agent consensus"
+  - "reproducibility"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.22773364"
+    description: "Concept DOI (always latest)"
+  - type: doi
+    value: "10.5281/zenodo.22812967"
+    description: "V0.6 CLOSED release"
+  - type: url
+    value: "https://github.com/mohamedaitzaouit84-hue/governance-kernel"
+    description: "Source repository"
+references:
+  - type: software
+    title: "Governance Kernel V0.6 CLOSED"
+    authors:
+      - family-names: "Ait Zaouit"
+        given-names: "Ahmed"
+    doi: "10.5281/zenodo.22812967"
+    date-released: "2026-09-17"
