@@ -75,6 +75,68 @@ Protected paths are enforced by G0.ZZ. Do not modify.
 
 If 5/5 or 19/19 fails, stop. Log a new finding (J-0.8.x) BEFORE any fix.
 
+## Fresh Start Protocol
+
+**Use when**: any of the following is true —
+  - you cloned the repository for the first time
+  - you rotated keys (owner_key.priv regenerated)
+  - V0.5 or V0.7 fails unexpectedly after passing once
+  - you ran `git checkout` or `git reset` that touched
+    identity/ or branches/
+
+**Why**: several local state files are intentionally
+gitignored but must be consistent with the current owner
+key. If they diverge (e.g. after a key change), the tests
+fail with signature-verification errors that look like
+kernel bugs but are state bugs. See J-0.8.43 / J-0.8.44 /
+J-0.8.46.
+
+**Protocol**:
+
+    cd governance-kernel
+
+    # 1. Remove local state that must match the current key
+    rm -f identity/owner_key.priv
+    rm -f identity/owner_key.pub
+    rm -f identity/root_state.json
+    rm -f branches/registry.jsonl
+    rm -f control/kill.flag
+
+    # 2. Bootstrap generates consistent state
+    python bootstrap.py
+
+    # 3. Run tests
+    python tests/gate_v05/run_all.py
+    python tests/gate_v07/run_all.py
+
+**Expected**: 5/5 + 19/19.
+
+**Note**: as of v0.7.18, bootstrap.py is idempotent and
+detects pub/priv divergence, so step 1 is a safety
+belt — bootstrap alone is usually sufficient. The explicit
+removal is kept here because it is the minimal reliable
+diagnosis when something is unclear.
+
+**Verification** (optional):
+
+    python3 - <<'EOF'
+    from cryptography.hazmat.primitives import serialization
+    priv = serialization.load_pem_private_key(
+        open('identity/owner_key.priv','rb').read(), password=None)
+    pub = serialization.load_pem_public_key(
+        open('identity/owner_key.pub','rb').read())
+    a = priv.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo)
+    b = pub.public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo)
+    print('MATCH' if a == b else 'MISMATCH')
+    EOF
+
+  Must print MATCH. If MISMATCH, re-run `python bootstrap.py`
+  (it will re-derive owner_key.pub from owner_key.priv).
+
 ## Golden rules
 1. Freeze before code
 2. Pre-registered thresholds

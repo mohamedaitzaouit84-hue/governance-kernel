@@ -1,5 +1,6 @@
 # المفاتيح الخاصة — لا تُرفع أبداً
 identity/owner_key.priv
+identity/owner_key.pub
 identity/root_state.json
 
 # السجلات المحلية
