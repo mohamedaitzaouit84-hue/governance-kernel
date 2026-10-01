@@ -4193,3 +4193,153 @@ pending HANDOVER.md update in v0.7.18.
 **Cost estimate**: 4 hours.
 
 **Status**: OPEN (pending FREEZE_v0.7.19).
+
+---
+
+## J-0.8.57 — resource_governor.reset() has no authorization
+
+**Discovered**: 2026-10-01, external AI-assisted red team (Kimi)
+              + direct verification in Termux
+**Class**: Security / Control plane
+**Related**: J-0.8.52 (kill switch), J-0.8.44 (kill.flag reset)
+
+**Symptom**:
+  control/resource_governor.py defines:
+
+    def reset():
+        if STATE.exists():
+            STATE.unlink()
+
+  Any process can call reset() and delete
+  control/resource_state.json. No signature, no
+  audit, no authorization check.
+
+  Reproduction (verified 2026-10-01 on v0.7.18):
+
+    import resource_governor as rg
+    # force-create state
+    rg.consume("file_agent_1", "cpu", amount=1)
+    # OR manually write control/resource_state.json
+    rg.reset()
+
+    Before: state_before=True
+    After:  state_after=False
+    Result: CRITICAL - reset() worked without privilege
+
+**Root cause**:
+  reset() was designed for test cleanup, not as a
+  governance primitive. It is a module-level function
+  with no caller authentication.
+
+  The resource governor's purpose is to bound CPU,
+  memory, and throughput per subject (V0.7 G0.28-30).
+  If any process can reset the state, the bounds are
+  advisory.
+
+**Why it was hidden**:
+  - The self red team (V0.7.1) tested attacks against
+    the consensus, not against the governor.
+  - G0.28-30 test the governor's behavior, not its
+    resistance to reset.
+  - The implicit assumption was "reset() is only
+    called by the kernel itself". But it is a
+    public module-level function.
+
+**Impact**: CRITICAL for the resource governor.
+  - An agent that can call reset() escapes limits
+    silently.
+  - The governor's audit trail (resource_limit_exceeded)
+    can be erased.
+  - Does NOT affect the kernel loop (V0.5, V0.7 pass).
+  - Does NOT affect normal operation.
+
+**Fix plan** (FREEZE_v0.7.19):
+  Option A - Require signed authorization:
+    - reset(signature_hex, message) like clear().
+    - Verify the signature before unlinking.
+    - Consistent with the kill switch pattern.
+
+  Option B - Append to audit:
+    - reset() appends a signed record.
+    - The state file is rebuilt from the audit on
+      next load.
+    - Deleting the file alone does not reset the state.
+
+  Recommended: A + B (like J-0.8.52).
+
+**Cost estimate**: 3 hours.
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+---
+
+## J-0.8.58 — rotation_manifest.jsonl is unsigned
+
+**Discovered**: 2026-10-01, direct inspection in Termux
+              (during A7 verification)
+**Class**: Security / Audit integrity
+**Related**: J-0.8.50 (audit re-hash), J-0.8.51 (checkpoint forgery)
+
+**Symptom**:
+  audit/rotation.py writes a manifest at every rotation:
+
+    logs/rotation_manifest.jsonl
+    {"ts": "...", "archived": "audit-...jsonl",
+     "previous_last_seq": N, "previous_last_hash": H,
+     "new_genesis_hash": G}
+
+  The manifest:
+    - has no Ed25519 signature
+    - has no hash chain
+    - can be modified by any process with write access
+      to logs/
+
+  Reproduction (verified 2026-10-01): the manifest was
+  created during the A7 test and contains only the
+  fields above. No signature field, no hash field.
+
+**Root cause**:
+  The manifest was designed to link one log file to
+  the next across rotation. It records the previous
+  file's last hash and the new file's genesis hash.
+  This preserves a chain across rotation boundaries.
+  But the manifest itself is not protected.
+
+**Why it was hidden**:
+  - The manifest is only written during rotation.
+  - Rotation only happens when the log exceeds a size
+    threshold.
+  - The self red team did not trigger rotation.
+  - J-0.8.50 (re-hash) covered the log itself, but
+    not the manifest that links log generations.
+
+**Impact**: CRITICAL in combination with J-0.8.50.
+  - An attacker who can rewrite a log file (J-0.8.50)
+    can also rewrite the manifest that declares the
+    transition.
+  - The "chain across rotation" property is then
+    unverifiable.
+  - Without the manifest, the previous generation
+    cannot be linked to the current one.
+  - Does NOT affect the kernel loop.
+
+**Fix plan** (FREEZE_v0.7.19):
+  - Sign the manifest entry with Ed25519.
+  - Include the previous manifest's hash in the new
+    entry (manifest chain).
+  - Or: treat the manifest as an audit record with
+    signature (J-0.8.50 fix extends to rotation).
+
+  Recommended: extend J-0.8.50's fix to cover the
+  manifest.
+
+**Cost estimate**: 2 hours (after J-0.8.50).
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+**Scientific note**:
+  J-0.8.58 is the third "chain without signature" finding
+  (after J-0.8.50 for the log, J-0.8.51 for the
+  checkpoints). The pattern is structural: the project
+  uses hash chains where signatures are required. The
+  fix is uniform: sign every link.

@@ -4,8 +4,9 @@ identity/owner_key.pub
 identity/root_state.json
 
 # السجلات المحلية
-logs/*.jsonl
-logs/*.json
+logs/**/*.jsonl
+logs/**/*.json
+logs/archive/
 
 # الحالة المحلية
 control/kill.flag
