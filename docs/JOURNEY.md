@@ -3657,3 +3657,325 @@ pending HANDOVER.md update in v0.7.18.
   mailing lists), the platform wins. For internal
   documentation (JOURNEY, FREEZE), the author's voice is
   fine. Two different audiences, two different languages.
+
+---
+
+## J-0.8.50 — Audit chain: re-hash attack undetected
+
+**Discovered**: 2026-10-01, external AI-assisted red team (Claude)
+**Class**: Security / Audit integrity
+**Related**: J-0.8.51 (checkpoint forgery), J-0.8.53 (key at rest), J-0.8.54 (bootstrap)
+
+**Symptom**:
+  An attacker with write access to logs/audit.jsonl can:
+
+  1. Modify any field in any record (tested: a middle
+     record's `ts` and `data`).
+  2. Recompute the SHA-256 hash of that record.
+  3. Recompute `prev_hash` and `hash` for every subsequent
+     record.
+  4. Rewrite the whole file.
+
+  Result: `python audit/integrity.py` returns rc=0 and
+  reports the chain as intact:
+
+    {"ok": true, "chain": {"ok": true, "n_records": 649},
+     "checkpoints": {"ok": true, "n_checkpoints": 12}}
+
+**Root cause**:
+  audit/append_only_log.py uses a hash chain, not a
+  signature chain. The hash scheme is:
+
+    hash = sha256(prev_hash + json.dumps(body,
+             sort_keys=True, separators=(',', ':'),
+             ensure_ascii=True))
+
+  There is no Ed25519 signature over the record. Anyone who
+  can compute SHA-256 (everyone) can recompute the chain.
+  The scheme was detected automatically by the red team
+  in under 5 seconds of enumeration.
+
+**Why it was hidden**:
+  - Self red team (V0.7.1) tested "audit tamper" by
+    deleting lines and reordering them, not by
+    recomputing the chain.
+  - The hash chain protects against accidental corruption,
+    which was the original design intent (J-0.8.7).
+  - The distinction between "hash chain" and "signature
+    chain" was not made explicit in the docs.
+
+**Impact**: CRITICAL for the audit trail's claim.
+  - The audit log is the kernel's primary evidence.
+  - If the log can be rewritten silently, every
+    downstream claim ("N actions happened", "subject X
+    did Y") is unverifiable.
+  - Does NOT affect the kernel loop (V0.5, V0.7 pass).
+  - Does NOT affect runtime behavior.
+
+**Fix plan** (FREEZE_v0.7.19):
+  Option A — Sign every record:
+    - Add an Ed25519 `sig` field to each record.
+    - `verify_chain()` requires a valid signature per
+      record.
+    - Cost: one signature per append. On Termux
+      (Android), ~5-10 ms per signature. Acceptable.
+
+  Option B — Publish the head hash externally:
+    - After every release, publish the current head_hash
+      in the GitHub Release notes and Zenodo.
+    - Anyone can verify the head against a public
+      anchor.
+    - Limitation: only protects history up to the last
+      publication.
+
+  Option C — External checkpoint anchor:
+    - Push periodic checkpoints to a separate location
+      (e.g., a second git repo, or a signed gist).
+    - Verifiable against the external source.
+
+  Recommended: A (primary) + B (defence in depth).
+
+**Cost estimate**: 1 day.
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+**Scientific note**:
+  A hash chain is an integrity mechanism against
+  accidental corruption. It is not an authenticity
+  mechanism against an adversary. The two are often
+  conflated. The red team's contribution is the
+  demonstration, not the observation.
+
+---
+
+## J-0.8.51 — Checkpoint forgery: signed checkpoints can be re-signed by the attacker
+
+**Discovered**: 2026-10-01, external AI-assisted red team (Claude)
+**Class**: Security / Audit integrity (related to J-0.8.50)
+**Related**: J-0.8.50 (chain rewrite), J-0.8.53 (key at rest)
+
+**Symptom**:
+  The audit log includes signed checkpoints every N
+  records:
+
+    logs/checkpoints.jsonl
+      {"seq": N, "head_hash": H, "signature": S, "ts": T}
+    where S = Ed25519_sign(owner_key.priv, f"{N}|{H}")
+
+  An attacker who can read identity/owner_key.priv (see
+  J-0.8.53) can:
+
+  1. Rewrite the audit chain (J-0.8.50).
+  2. Rewrite every checkpoint with the new chain head
+     and a fresh signature.
+  3. `verify_checkpoints()` returns ok=true.
+
+  Result from the red team:
+
+    forged chain ok=True, checkpoints ok=True,
+    signed-hint=True
+
+**Root cause**:
+  The checkpoints are signed, but the signing key is
+  readable by the same attacker (0o600 protects against
+  other users, not against a compromised process
+  running as the owner). Therefore the signature does
+  not raise the bar.
+
+**Why it was hidden**:
+  - The checkpoint mechanism was introduced to protect
+    against J-0.8.50-type attacks.
+  - The mechanism was tested (J-0.8.51 was not in the
+    self red team scope).
+  - The implicit assumption was "the private key is not
+    accessible to the attacker". J-0.8.53 falsifies
+    this assumption.
+
+**Impact**: CRITICAL in combination with J-0.8.53.
+  - Alone (no key access): checkpoints raise the bar.
+  - With key access: checkpoints are useless.
+  - Does NOT affect runtime behavior.
+
+**Fix plan** (FREEZE_v0.7.19):
+  - First fix J-0.8.53 (key at rest).
+  - Then: publish checkpoint hash to an external
+    location (see J-0.8.50 Option B).
+  - Then: never regenerate checkpoints from local
+    state — checkpoints only append, never rewrite.
+
+**Cost estimate**: 2 days (dependent on J-0.8.53).
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+---
+
+## J-0.8.52 — Kill switch bypass via file deletion
+
+**Discovered**: 2026-10-01, external AI-assisted red team (Claude)
+**Class**: Security / Control plane
+**Related**: J-0.8.44 (kill.flag reset in bootstrap)
+
+**Symptom**:
+  `control/kill_switch.py` defines:
+
+    def is_active():
+        return FLAG.exists()
+
+  An attacker who can delete control/kill.flag can disable
+  the kill switch:
+
+    trigger("redteam")          -> True  (switch on)
+    check()                     -> raises KillSwitchActive
+    FLAG.unlink()               -> attack: plain delete
+    check()                     -> PASSED (switch disabled)
+
+  Furthermore:
+
+  - If the flag is pre-set to "{}" (a pre-lock), a
+    subsequent trigger("real emergency") returns False
+    and appends NOTHING to the audit log. The real
+    trigger is silently swallowed.
+  - If the flag is set to "garbage", status() raises
+    JSONDecodeError (unhandled).
+
+  Integrity check does not detect any of this because
+  control/kill.flag is outside the audit log.
+
+**Root cause**:
+  The kill switch state is stored as a file's existence,
+  not as a signed record. Deleting a file is
+  universally possible for any process with write access
+  to the directory. No signature, no state transition,
+  no audit trail.
+
+**Why it was hidden**:
+  - G0.17 exercises trigger() and clear(), which both
+    work correctly under normal conditions.
+  - The adversarial path (delete the flag rather than
+    clear it) was not tested.
+  - J-0.8.44 addressed a different problem (stale flag
+    across runs), not the delete attack.
+
+**Impact**: CRITICAL for the control plane.
+  - "Emergency halt" is one of the kernel's four
+    advertised properties.
+  - If it can be silently disabled, the property is
+    not a guarantee.
+  - Does NOT affect normal operation.
+
+**Fix plan** (FREEZE_v0.7.19):
+  Option A — Signed state transitions:
+    - trigger() appends a signed "kill_switch_triggered"
+      record to the audit log (already does).
+    - is_active() reads the audit log, not the file.
+    - The file becomes a cache; the source of truth is
+      the audit.
+    - Deleting the file does nothing; the next is_active()
+      reads from the audit and returns True.
+    - To clear, clear() must append a signed
+      "kill_switch_cleared" record (already does).
+
+  Option B — External monitor:
+    - A separate process watches the audit log for
+      trigger records and enforces the kill at the OS
+      level (e.g., SIGSTOP, iptables, cgroups).
+    - Out of scope for v0.7.19.
+
+  Recommended: A.
+
+**Cost estimate**: 1 day.
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+---
+
+## J-0.8.53 — identity/owner_key.priv is unencrypted
+
+**Discovered**: 2026-10-01, external AI-assisted red team (Claude)
+**Class**: Security / Key at rest
+**Related**: J-0.8.50, J-0.8.51
+
+**Symptom**:
+  identity/owner_key.priv is stored as an unencrypted
+  PEM file with mode 0o600.
+
+  An attacker with read access to the file (any process
+  running as the same user) can:
+
+  1. Load the private key.
+  2. Sign arbitrary data: policies (see J-0.8.54),
+     checkpoints (J-0.8.51), audit records (potential
+     fix for J-0.8.50), delegation tokens, etc.
+  3. Have every signature accepted by the kernel.
+
+**Root cause**:
+  seed/root.py uses `serialization.NoEncryption()` when
+  writing the private key. The key is protected by file
+  permissions only.
+
+**Why it was hidden**:
+  - File mode 0o600 looks secure in the context of a
+    single-user device.
+  - The project's own threat model was not written
+    down. The implicit assumption was "the user's
+    account is not compromised".
+  - No prior test exercised the "same-user attacker"
+    case.
+
+**Impact**: CRITICAL. Root of trust.
+  - The private key is the root of all trust in the
+    kernel. Policy signatures, branch signatures,
+    checkpoint signatures, delegation signatures — all
+    depend on it.
+  - A compromised key invalidates every signature-based
+    guarantee the kernel provides.
+  - Does NOT affect the kernel loop (V0.5, V0.7 pass).
+  - Severity depends on the threat model:
+      * If the threat model excludes same-user attackers:
+        PARTIAL.
+      * If the threat model includes them: CRITICAL.
+    See docs/SECURITY_MODEL.md (to be written).
+
+**Fix plan** (FREEZE_v0.7.19):
+  Option A — Encrypt the private key:
+    - Use PKCS#8 with password-based encryption
+      (e.g., AES-256 + PBKDF2 or Argon2).
+    - Prompt for the passphrase at bootstrap and at
+      any sign operation.
+    - Cache the key in memory only for the duration of
+      the operation.
+
+  Option B — External keystore:
+    - Use the OS keystore (Android Keystore, Linux
+      keyctl) for storage.
+    - Requires per-platform work.
+
+  Option C — Document the threat model only:
+    - Accept that same-user attacks are out of scope.
+    - Document this in docs/SECURITY_MODEL.md.
+    - No code change.
+
+  Recommended: C for v0.7.19, A for v0.8.
+
+  Rationale: the project is a research artifact, not a
+  production system. Documenting the threat model is
+  honest and immediate. Encrypting the key is a real
+  improvement but breaks the "no passphrase" UX that
+  the current bootstrap relies on. Both are valid; the
+  choice depends on what "security" means for this
+  project.
+
+**Cost estimate**: 30 minutes (documentation) or
+                   1 day (encryption).
+
+**Status**: OPEN (pending FREEZE_v0.7.19).
+
+**Scientific note**:
+  This is the central finding of the red team. Every
+  other CRITICAL follows from it. The kernel trusts the
+  owner key; the owner key is stored in the clear;
+  therefore the kernel trusts whatever can read the
+  key. The fix is either (a) protect the key better,
+  or (b) define the threat model so this is out of
+  scope. Both are legitimate. Pretending the key is
+  protected when it is not is the only wrong answer.
