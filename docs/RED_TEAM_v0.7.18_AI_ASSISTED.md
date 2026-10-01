@@ -2,10 +2,11 @@
 
 **Date**: 2026-10-01
 **Target**: Governance Kernel v0.7.18 (HEAD b709e86)
-**Method**: AI-assisted, 3 rounds, 14 attacks
-**Result**: 4 CRITICAL, 3 PARTIAL, 1 BLOCKED, 1 INSPECT, 5 no-finding
-**Reported by**: Claude (Anthropic), via Colab scripts
-**Logged**: J-0.8.50 through J-0.8.56
+**Method**: AI-assisted (Claude: 3 rounds, 14 attacks;
+            Kimi: 1 surgical round + Termux verification)
+**Result**: 6 CRITICAL, 3 PARTIAL, 3 BLOCKED (verified)
+**Reported by**: Claude (Anthropic) + Kimi + author
+**Logged**: J-0.8.50 through J-0.8.58
 **Related**: docs/SECURITY_MODEL.md, docs/RED_TEAM_v0.6.md
 
 ---
@@ -157,6 +158,34 @@ Deleting the last N records from logs/audit.jsonl is
 not detected. The hash chain does not anchor the
 length.
 
+
+### 4.8 J-0.8.57 — resource_governor.reset() unprivileged (CRITICAL)
+
+control/resource_governor.py exposes:
+
+    def reset():
+        if STATE.exists():
+            STATE.unlink()
+
+No signature, no audit, no authorization check.
+Verified 2026-10-01 in Termux:
+
+    state_before = True (forced)
+    rg.reset()
+    state_after  = False
+
+Any process can erase the governor's state and
+escape resource limits silently.
+
+### 4.9 J-0.8.58 — rotation_manifest.jsonl unsigned (CRITICAL)
+
+audit/rotation.py writes logs/rotation_manifest.jsonl
+at every rotation. The manifest links the previous
+log file to the new one (previous_last_hash and
+new_genesis_hash). It has no Ed25519 signature and
+no hash chain. In combination with J-0.8.50, the
+'chain across rotation' property is unverifiable.
+
 ## 5. What Was NOT Tested
 
 The following were not part of this red team:
@@ -249,12 +278,13 @@ gate logic. The kernel does what it says it does;
 what it says it does not include defending against a
 same-user attacker.
 
-That gap is now documented, in JOURNEY.md (J-0.8.50-56)
+That gap is now documented, in JOURNEY.md (J-0.8.50-58)
 and in SECURITY_MODEL.md.
 
 ---
 
 **Red Team COMPLETE**
-**14 attacks, 4 CRITICAL, 3 PARTIAL**
+**Two AI systems + direct verification**
+**9 findings: 6 CRITICAL, 3 PARTIAL**
 **Kernel untouched (G0.ZZ verified on every commit)**
 **Next: FREEZE_v0.7.19 (fix plan)**

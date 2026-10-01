@@ -5,7 +5,7 @@
 **Predecessor**: v0.7.18 (015e0bc)
 **Findings addressed**: J-0.8.50, J-0.8.51, J-0.8.52,
                          J-0.8.53, J-0.8.54, J-0.8.55,
-                         J-0.8.56
+                         J-0.8.56, J-0.8.57, J-0.8.58
 **Source**: docs/RED_TEAM_v0.7.18_AI_ASSISTED.md
 **Status**: PLANNED (not yet frozen)
 
@@ -111,6 +111,37 @@ seq is lower than the recorded highest.
 **Tests**: V0.7 G0.41 must pass. A new test verifies
 that tail truncation is detected.
 
+### J-0.8.57 — Authorize resource_governor.reset() (CRITICAL)
+
+**File**: control/resource_governor.py
+**Change**: reset() requires a signed authorization:
+
+    def reset(signature_hex, message):
+        if not root.verify(message.encode(), bytes.fromhex(signature_hex)):
+            return False
+        STATE.unlink(missing_ok=True)
+        audit.append("resource_state_reset", {"message": message})
+        return True
+
+  Without a valid signature, reset() returns False and
+  leaves the state untouched.
+**Tests**: G0.28-30 must pass. A new test verifies that
+reset() without a signature does not delete the state.
+
+### J-0.8.58 — Sign rotation_manifest (CRITICAL)
+
+**File**: audit/rotation.py
+**Change**: each manifest entry gains:
+  - an Ed25519 signature over
+    f"{ts}|{archived}|{prev_last_seq}|{prev_last_hash}|{new_genesis_hash}"
+  - a `prev_manifest_hash` field linking to the previous
+    entry (manifest chain)
+**Tests**: rotation tests must pass. A new test verifies
+that a tampered manifest is detected.
+**Depends on**: J-0.8.50 (sign every audit record), so
+that the root sign() is already available in the
+rotation path.
+
 ## Section 2 — Pre-registered Thresholds
 
 No new thresholds. All existing gates must continue
@@ -128,6 +159,9 @@ The order reflects dependency:
   5. J-0.8.55 (signed subjects) — independent.
   6. J-0.8.54 (bootstrap consent) — independent.
   7. J-0.8.56 (length anchor) — depends on J-0.8.50.
+  8. J-0.8.57 (governor reset authorization) —
+     independent (uses root.verify directly).
+  9. J-0.8.58 (signed manifest) — depends on J-0.8.50.
 
 ## Section 4 — Non-goals
 
@@ -162,8 +196,10 @@ After all sub-fixes are implemented:
   - J-0.8.55: 1 day
   - J-0.8.54: 2 hours
   - J-0.8.56: 4 hours
+  - J-0.8.57: 3 hours
+  - J-0.8.58: 2 hours (after J-0.8.50)
 
-  Total: ~5 working days.
+  Total: ~6 working days.
 
 ## Section 7 — Status
 

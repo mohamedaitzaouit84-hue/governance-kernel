@@ -128,6 +128,8 @@ scope (pin versions, audit wheels, etc.).
 | J-0.8.54 (policy laundering) | Same-user attacker | PARTIAL |
 | J-0.8.55 (subjects escalation) | Same-user attacker | PARTIAL |
 | J-0.8.56 (audit truncation) | Same-user attacker | PARTIAL |
+| J-0.8.57 (governor reset) | Same-user attacker | CRITICAL if same-user is in scope |
+| J-0.8.58 (manifest unsigned) | Same-user attacker | CRITICAL if same-user is in scope |
 
 Note: all findings share the same root cause — the
 threat model did not explicitly include or exclude
@@ -203,19 +205,27 @@ The following are planned for v0.8.x:
     policies (J-0.8.54).
   - Store kill switch state as a signed audit record
     (J-0.8.52).
+  - Require signed authorization for
+    resource_governor.reset() (J-0.8.57).
+  - Sign rotation_manifest.jsonl and chain it
+    (J-0.8.58).
 
 The order reflects dependency: J-0.8.53 (key at rest)
 should come first, since J-0.8.51 depends on it.
+J-0.8.58 depends on J-0.8.50.
 
 ## 9. Honest Statement
 
 Governance Kernel v0.7.18 is a research artifact.
 
 It has been tested against its stated threat model.
-It has been challenged by an external AI-assisted
-red team that found 7 findings (4 CRITICAL, 3
-PARTIAL) against a stronger threat model. Those
-findings are documented, not hidden.
+It has been challenged by two external
+AI-assisted red team rounds (Claude: 3 rounds, 14
+attacks; Kimi: 1 surgical round) and a direct
+verification pass in Termux. Together they found 9
+findings (6 CRITICAL, 3 PARTIAL) against a stronger
+threat model. Those findings are documented, not
+hidden.
 
 Anyone planning to use the kernel in an
 adversarial environment should read J-0.8.50-56
