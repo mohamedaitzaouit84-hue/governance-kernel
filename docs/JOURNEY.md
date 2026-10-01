@@ -3597,3 +3597,63 @@ pending HANDOVER.md update in v0.7.18.
 
   The external reviewer's question was correct given the
   information available. The error was entirely internal.
+
+---
+
+## J-0.8.49 — Reddit posts should match the subreddit language
+
+**Discovered**: 2026-09-30, u/arielrahamim on r/kubernetes
+**Class**: Communication policy
+**Related**: J-0.8.47 (external review), J-0.8.48 (record accuracy)
+
+**Symptom**:
+  Posts on r/kubernetes mixed Arabic and English. A reviewer
+  responded:
+
+    "I am sorry, nothing against you but your posts are
+     unreadable. please structure it better, use only one
+     language (english) for this site."
+
+  A second reviewer (u/base64-encode) asked the same thing
+  more neutrally:
+
+    "Why are you mixing (urdu/arabic? ) in post?"
+
+**Root cause**:
+  The project is Arabic-first in its internal documentation
+  (JOURNEY, FREEZE, some HANDOVER sections). The author is
+  Moroccan. When posting to English-language subreddits,
+  the same bilingual style was carried over, which is not
+  the norm on those sites.
+
+**Why it was hidden**:
+  - The handover documents mix Arabic and English.
+  - The mistake was not logged as a finding earlier
+    (J-0.8.47 recorded the technical review but not the
+    language feedback).
+
+**Impact**: MEDIUM for communication.
+  - Reddit readers (especially r/kubernetes) expect
+    English-only.
+  - Mixed-language posts are harder to scan and often
+    skipped.
+  - Does NOT affect the software.
+
+**Resolution**:
+  - Future posts on English-language subreddits will be
+    English-only.
+  - Arabic remains the internal documentation language
+    where appropriate.
+  - Rule: match the language of the platform, not the
+    author.
+
+**Cost estimate**: 15 minutes (policy note).
+
+**Status**: CLOSED (2026-09-30).
+
+**Scientific note**:
+  The tension between "write in your own voice" and "match
+  the platform" is real. For community review (Reddit, HN,
+  mailing lists), the platform wins. For internal
+  documentation (JOURNEY, FREEZE), the author's voice is
+  fine. Two different audiences, two different languages.
