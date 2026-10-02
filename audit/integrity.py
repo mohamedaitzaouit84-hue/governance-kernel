@@ -103,20 +103,39 @@ def verify_checkpoints():
 
 
 def _load_cutoff():
-    """Read cutoff_seq from logs/.audit_cutoff.json if present.
+    """Read and verify logs/.audit_cutoff.json.
 
     V0.7.19 (J-0.8.50): records with seq <= cutoff_seq and no
-    "sig" are LEGACY_UNVERIFIED. If missing, cutoff is None
-    (strict mode).
+    "sig" are LEGACY_UNVERIFIED. If missing or tampered,
+    cutoff is None (strict mode).
+
+    The cutoff file is signed by the owner key:
+      signature = Ed25519 over f"{cutoff_seq}|{cutoff_hash}"
+
+    A tampered cutoff -> strict mode -> legacy records rejected.
     """
     cutoff_path = KERNEL_DIR / "logs" / ".audit_cutoff.json"
     if not cutoff_path.exists():
         return None
     try:
         data = json.loads(cutoff_path.read_text(encoding="utf-8"))
-        return data.get("cutoff_seq")
     except (json.JSONDecodeError, OSError):
         return None
+
+    seq = data.get("cutoff_seq")
+    hash_hex = data.get("cutoff_hash")
+    sig_hex = data.get("signature")
+    if seq is None or hash_hex is None or sig_hex is None:
+        return None
+
+    msg = f"{seq}|{hash_hex}".encode("utf-8")
+    try:
+        sig = bytes.fromhex(sig_hex)
+    except ValueError:
+        return None
+    if not root.verify(msg, sig):
+        return None  # tampered -> strict mode
+    return seq
 
 
 def full_verify():
