@@ -3737,7 +3737,7 @@ pending HANDOVER.md update in v0.7.18.
 
 **Cost estimate**: 1 day.
 
-**Status**: FIX IN PROGRESS (v0.7.19, Sprint 1, 2026-10-02).
+**Status**: FIXED (v0.7.19, Sprint 1, 2026-10-02, commits 4dc3bdf + 7c4d448).
 
 **Scientific note**:
   A hash chain is an integrity mechanism against
@@ -4343,3 +4343,254 @@ pending HANDOVER.md update in v0.7.18.
   checkpoints). The pattern is structural: the project
   uses hash chains where signatures are required. The
   fix is uniform: sign every link.
+
+---
+
+## J-0.8.59 — Checkpoint key rotation without re-signing
+
+**Discovered**: 2026-10-02 (during J-0.8.50 verification)
+**Class**: Security / Audit integrity (related to J-0.8.50)
+**Related**: J-0.8.50 (chain re-hash), J-0.8.51 (checkpoint forgery),
+             J-0.8.60 (test pollution), J-0.8.61 (multi-generation)
+
+**Symptom**:
+  verify_checkpoints() fails on the real checkpoint file:
+
+    {"ok": false, "reason": "signature invalid at seq 50"}
+
+  Investigation of logs/checkpoints.jsonl (123 checkpoints):
+    - valid:   31
+    - invalid: 92
+
+  The invalid checkpoints are signed with older owner keys
+  (previous generations). The valid ones are signed with the
+  current key. There is no clean cut: valid and invalid
+  checkpoints are interleaved across the seq range.
+
+**Root cause**:
+  The Fresh Start Protocol (documented in HANDOVER.md) deletes
+  identity/owner_key.priv, identity/owner_key.pub, and
+  identity/root_state.json, then regenerates them. It does NOT
+  delete logs/checkpoints.jsonl or logs/audit.jsonl.
+
+  Result: after N Fresh Starts, checkpoints.jsonl contains
+  checkpoints signed by N different keys. verify_checkpoints()
+  only knows the current key, so older signatures fail.
+
+**Why it was hidden**:
+  verify_checkpoints() is called only via full_verify(), which
+  is invoked by `python3 audit/integrity.py`. That command was
+  rarely run manually between sessions. The gate tests
+  (G0.41, G0.42) use temp logs, so they never touch the real
+  checkpoints file.
+
+**Impact**: PARTIAL.
+  - The kernel loop (V0.5, V0.7) is unaffected.
+  - No test currently asserts that verify_checkpoints()
+    returns ok on the real file.
+  - The claim "checkpoints are signed" is degraded to
+    "checkpoints are signed by some key at some time",
+    which is weaker than intended.
+  - Does not extend beyond what J-0.8.50 already covers:
+    the same-user attacker is the threat model.
+
+**Fix plan** (v0.7.19, Sprint 1.6 — deferred):
+  Option A — Multi-generation cutoff:
+    - Each checkpoint entry gains a `key_fingerprint` field.
+    - verify_checkpoints() accepts a checkpoint if and only if
+      its signature verifies under the fingerprint's key.
+    - Old fingerprints must be declared in a cutoff file
+      (similar to .audit_cutoff.json).
+    - Complexity: high. Requires key escrow.
+
+  Option B — Accept multi-generation as legacy:
+    - Like J-0.8.50's LEGACY_UNVERIFIED, but at the
+      checkpoint level: a checkpoint whose signature does not
+      verify is marked LEGACY_UNVERIFIED and does not fail
+      verify_checkpoints() as long as its seq is below a
+      declared cutoff.
+    - Simpler than A; does not require old keys.
+    - Does not distinguish "signed by old key" from "signed
+      by attacker with same key". Both become "unverified".
+
+  Option C — Recreate checkpoints.jsonl under the current key:
+    - Delete logs/checkpoints.jsonl.
+    - Re-run the audit log through _maybe_checkpoint() using
+      the current key.
+    - This is a one-time operation, lossy: it re-signs history
+      rather than preserving original signatures.
+    - Honest but blunt.
+
+  Recommended: B (consistent with J-0.8.50's design).
+
+**Cost estimate**: 4 hours (Sprint 1.6).
+
+**Status**: OPEN (deferred to Sprint 1.6).
+
+**Scientific note**:
+  This is the first finding discovered *not* by an external
+  red team, but by a routine verification *after* a fix
+  (J-0.8.50) that surfaced an adjacent assumption. The
+  original red team tested the audit log; the checkpoints
+  file had the same weakness (key rotation) but a different
+  trigger (Fresh Start Protocol rather than re-hash attack).
+  Both share the same root: signatures are key-bound, and
+  keys change.
+
+
+---
+
+## J-0.8.60 — Test suite pollutes the real audit log
+
+**Discovered**: 2026-10-02 (during J-0.8.50 verification)
+**Class**: Data hygiene / Test isolation
+**Related**: J-0.8.41 (empty audit self-heal), J-0.8.59
+
+**Symptom**:
+  Between two consecutive reads of logs/audit.jsonl:
+    - Before: 653 records
+    - After:  1571 records (delta: +918)
+  Three runs of `python3 tests/gate_v07/run_all.py` added
+  thousands of records. By the end of the session the seq
+  reached 4600.
+
+  The real audit log — meant to record governed actions —
+  is polluted by test traffic.
+
+**Root cause**:
+  Tests that exercise the kernel loop (G0.28 Cycle Time,
+  G0.30 Throughput, G0.31 Real FileAgent, G0.32 Real
+  ComputeAgent, G0.33 Real QueryAgent) call the real
+  audit.append() via governed_action_v05. They do not
+  redirect LOG_PATH to a temporary file.
+
+  In contrast, G0.41 (Empty Audit Self-Heal) and G0.42
+  (Audit Signature) use a temp file via a helper. The
+  discipline is inconsistent.
+
+**Why it was hidden**:
+  The audit log grew steadily and no one compared
+  counts before/after a test run. The growth is real
+  but not pathological for a research artifact.
+
+**Impact**: PARTIAL.
+  - Correctness: no impact. The chain remains valid.
+  - Hygiene: the "audit log" no longer represents only
+    governed actions; it contains performance-test noise.
+  - Downstream: J-0.8.59's investigation was complicated
+    by not knowing which seqs belonged to which run.
+  - The .gitignore on logs/**/*.jsonl means this never
+    leaves the local environment.
+
+**Fix plan** (v0.7.x, Sprint 1.6 or later):
+  Option A — Temp log per test:
+    - Each test that calls the kernel loop patches
+      append_only_log.LOG_PATH and CKPT_PATH to temp files.
+    - Follow the pattern from G0.41 / G0.42.
+    - Clean, but touches many test files.
+
+  Option B — Test mode via env var:
+    - bootstrap.py / append_only_log.py check for
+      GK_TEST_MODE=1 and redirect to a temp log.
+    - Single change, but implicit.
+
+  Option C — Document and accept:
+    - Note in HANDOVER.md that running the test suite
+      grows the real log.
+    - Lowest effort, lowest quality.
+
+  Recommended: A (consistent with existing G0.41/G0.42
+  pattern; explicit; local to tests).
+
+**Cost estimate**: 2-3 hours.
+
+**Status**: OPEN (deferred).
+
+**Scientific note**:
+  This finding is about the boundary between the artifact
+  and its test harness. The artifact claims "the audit log
+  records governed actions". The test harness violates
+  that claim by generating non-governed traffic into the
+  same log. A governance kernel should take its own
+  claims seriously even in its test infrastructure.
+
+
+---
+
+## J-0.8.61 — Fresh Start Protocol does not clear audit state
+
+**Discovered**: 2026-10-02 (while investigating J-0.8.59)
+**Class**: Operational / Protocol completeness
+**Related**: J-0.8.59, J-0.8.60
+
+**Symptom**:
+  After running the Fresh Start Protocol (documented in
+  HANDOVER.md):
+
+    rm -f identity/owner_key.priv identity/owner_key.pub
+    rm -f identity/root_state.json
+    rm -f branches/registry.jsonl control/kill.flag
+    python bootstrap.py
+
+  identity/ is clean, branches/registry.jsonl is empty,
+  control/kill.flag is gone. But:
+    - logs/audit.jsonl retains all previous records.
+    - logs/checkpoints.jsonl retains all previous checkpoints.
+    - logs/.audit_cutoff.json (if present) retains its
+      previous cutoff, signed by the *previous* key.
+
+**Root cause**:
+  The Fresh Start Protocol deletes identity and control
+  state but not audit state. The rationale (implicit) is
+  probably: "audit is append-only, do not delete history."
+  But this is in tension with the fact that the *key* is
+  being rotated, which invalidates old signatures.
+
+**Why it was hidden**:
+  The protocol was used during v0.5-v0.7 development
+  mainly to reset the identity, not to produce a clean
+  repository state. Audit persistence was convenient.
+
+**Impact**: PARTIAL.
+  - Not a vulnerability per se; the attacker model does
+    not include "the owner ran Fresh Start".
+  - Operationally, it produces the J-0.8.59 situation:
+    checkpoints signed by old keys coexist with new ones.
+  - It also means the "fingerprint" printed by bootstrap
+    changes while the audit log does not — a confusing
+    mismatch for anyone auditing the repository later.
+
+**Fix plan**:
+  Option A — Extend Fresh Start:
+    - Add three rm lines:
+        rm -f logs/audit.jsonl
+        rm -f logs/checkpoints.jsonl
+        rm -f logs/.audit_cutoff.json
+    - Simple, but destroys history (which may be the point
+      of "fresh start").
+
+  Option B — Fresh Start becomes "soft" vs "hard":
+    - Soft: identity reset only (current behavior).
+    - Hard: also clear audit logs.
+    - Document both in HANDOVER.md.
+
+  Option C — Make the choice explicit in bootstrap.py:
+    - bootstrap.py detects "identity was regenerated but
+      audit exists" and prints a warning with two options.
+    - Does not auto-delete.
+
+  Recommended: B + C. Two named modes, plus a warning
+  on mismatch.
+
+**Cost estimate**: 1-2 hours.
+
+**Status**: OPEN (deferred).
+
+**Scientific note**:
+  This finding is meta: it is about the *protocol for
+  working on the artifact*, not the artifact itself.
+  The Fresh Start Protocol is a documented procedure in
+  HANDOVER.md. Its incompleteness was not visible until
+  the J-0.8.50 fix surfaced a signature-checking path
+  that behaves differently across key generations.
+
