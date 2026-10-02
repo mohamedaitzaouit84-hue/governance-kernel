@@ -25,6 +25,7 @@ TESTS = [
     ("G0.39 Path Portability",      "test_g039_path_portability.py"),
     ("G0.40 Path Port Audit",       "test_g040_path_portability_audit.py"),
     ("G0.41 Empty Audit Self-Heal", "test_g041_empty_audit_self_heal.py"),
+    ("G0.42 Audit Signature",       "test_g042_audit_signature.py"),
 ]
 
 

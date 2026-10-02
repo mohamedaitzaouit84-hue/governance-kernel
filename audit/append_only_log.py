@@ -23,6 +23,15 @@ def _hash_record(seq, ts, prev_hash, kind, data):
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _sign_seq_hash(seq, hash_hex):
+    """V0.7.19 (J-0.8.50): Ed25519 signature over f"{seq}|{hash}".
+
+    Same pattern as checkpoints (_maybe_checkpoint).
+    """
+    msg = f"{seq}|{hash_hex}".encode("utf-8")
+    return root.sign(msg).hex()
+
+
 def _read_last():
     """Return the last record, or a synthetic genesis if log is empty.
 
@@ -72,7 +81,8 @@ def open_log():
         data = {"kernel_version": "0.1.0", "note": "genesis audit record"}
         h = _hash_record(0, ts, GENESIS_HASH, "genesis", data)
         rec = {"seq": 0, "ts": ts, "prev_hash": GENESIS_HASH,
-               "kind": "genesis", "data": data, "hash": h}
+               "kind": "genesis", "data": data, "hash": h,
+               "sig": _sign_seq_hash(0, h)}
         _write_record(rec)
         return rec
     return last
@@ -87,7 +97,8 @@ def append(kind, data):
     ts = _now()
     h = _hash_record(seq, ts, prev_hash, kind, data)
     rec = {"seq": seq, "ts": ts, "prev_hash": prev_hash,
-           "kind": kind, "data": data, "hash": h}
+           "kind": kind, "data": data, "hash": h,
+           "sig": _sign_seq_hash(seq, h)}
     _write_record(rec)
     _maybe_checkpoint(rec)
     return rec

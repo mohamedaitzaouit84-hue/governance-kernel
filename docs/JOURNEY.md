@@ -3737,7 +3737,7 @@ pending HANDOVER.md update in v0.7.18.
 
 **Cost estimate**: 1 day.
 
-**Status**: OPEN (pending FREEZE_v0.7.19).
+**Status**: FIX IN PROGRESS (v0.7.19, Sprint 1, 2026-10-02).
 
 **Scientific note**:
   A hash chain is an integrity mechanism against
