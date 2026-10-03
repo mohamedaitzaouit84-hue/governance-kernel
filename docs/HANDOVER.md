@@ -290,3 +290,63 @@ Suggested order for the next session:
 ============================================================
 END OF HANDOVER — 2026-09-23
 ============================================================
+
+============================================================
+SESSION UPDATE — 2026-10-03
+============================================================
+
+The section above (2026-09-23) is historical. This section
+supersedes it.
+
+HEAD: 3fd19c0
+Branch: main == origin/main
+
+Gates:
+  V0.4: 54/54, PRI = 1.0000
+  V0.5: 5/5 CLOSED
+  V0.6: 5/5 CLOSED
+  V0.7: 21/21 CLOSED  (G0.42 + G0.44 added since 2026-09-23)
+
+Sprints completed since 2026-09-23:
+  Sprint 1   (J-0.8.50) FIXED 2026-10-02  commits 4dc3bdf, 7c4d448, f922c15
+  Sprint 6.1 (J-0.8.60) FIXED 2026-10-03  commit 3fd19c0
+
+Findings:
+  CLOSED: 34+
+  OPEN:   10 (5 CRITICAL + 5 PARTIAL)
+    CRITICAL: J-0.8.51, J-0.8.52, J-0.8.53, J-0.8.57, J-0.8.58
+    PARTIAL:  J-0.8.54, J-0.8.55, J-0.8.56, J-0.8.59, J-0.8.61
+
+  (J-0.8.60 now closed — see commit 3fd19c0.)
+
+New env vars (test isolation):
+  GK_LOG_PATH   -> audit log path (default: logs/audit.jsonl)
+  GK_CKPT_PATH  -> checkpoints path (default: logs/checkpoints.jsonl)
+
+  Unset -> default production paths (behavior unchanged).
+  tests/gate_v07/run_all.py sets both to a tempfile sandbox
+  at startup; subprocesses inherit them. Consequence: the
+  real logs/audit.jsonl is no longer touched by the suite.
+
+Errors recorded (#21-24, in addition to #1-20):
+  21. JOURNEY entry before `grep -c` -> duplication
+  22. `git diff` opens pager in Termux -> `git config --global core.pager cat`
+  23. Long triple-quoted heredoc patches may truncate -> use string concatenation
+  24. Skipping `git add` before `git commit` -> always run `git status --short` first
+
+Next session (Sprint 6 Phase 2):
+  - kernel/context.py (contextvar-based sandbox())
+  - env-var pattern extended to identity/, control/, branches/, memory/
+  - J-0.8.61 (Fresh Start Protocol — soft/hard modes)
+  - gate G0.45 (deeper subprocess isolation)
+
+Then:
+  Sprint 2: J-0.8.52 (kill switch signed state), J-0.8.55 (subjects signed)
+  Sprint 3: J-0.8.54 (bootstrap consent), J-0.8.57 (governor auth)
+  Sprint 4: J-0.8.53 (key encryption), J-0.8.51 (external anchor)
+  Sprint 5: J-0.8.58 (manifest signed)
+  Sprint 6.2: J-0.8.59 (checkpoint key rotation)
+
+============================================================
+END OF SESSION UPDATE — 2026-10-03
+============================================================
