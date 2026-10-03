@@ -338,6 +338,12 @@ Errors recorded (#21-24, in addition to #1-20):
       requires bootstrap.py to honor it too. Otherwise bootstrap writes
       to real paths while tests read from an empty sandbox. Lesson:
       patch bootstrap BEFORE pointing run_all at the new env vars.
+  27. Patching a protected file without updating G0.ZZ -> before patching
+      any file under kernel/, authorization/, policy/, control/, audit/,
+      seed/, or memory/, check tests/gate_v07/test_g0ZZ_kernel_untouched.py
+      ALLOWED_EXCEPTIONS. If the file is not listed, add it in the same
+      commit. G0.ZZ compares `git diff v0.6-closed HEAD`, so it fails on
+      committed changes even when the code works.
 
 Next session (Sprint 6 Phase 2):
   - kernel/context.py (contextvar-based sandbox())
