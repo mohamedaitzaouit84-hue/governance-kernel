@@ -6,7 +6,22 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 
 KERNEL_DIR = Path(__file__).resolve().parent.parent
-IDENTITY_DIR = KERNEL_DIR / "identity"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.61): allow env to redirect the identity dir.
+
+    GK_IDENTITY_DIR -> identity/ (owner keys, root_state.json)
+
+    This is a TESTING convenience, not a security feature.
+    An attacker who can set env vars can already modify the
+    filesystem. The Position A/B threat model is unchanged.
+    """
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+IDENTITY_DIR = _resolve_path("GK_IDENTITY_DIR", KERNEL_DIR / "identity")
 OWNER_KEY_PRIV = IDENTITY_DIR / "owner_key.priv"
 OWNER_KEY_PUB = IDENTITY_DIR / "owner_key.pub"
 ROOT_STATE = IDENTITY_DIR / "root_state.json"

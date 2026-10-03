@@ -16,7 +16,21 @@ import root
 import append_only_log as audit
 
 KERNEL_DIR = _root
-REGISTRY_FILE = KERNEL_DIR / "authorization" / "subjects.json"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.61): allow env to redirect authorization dir.
+
+    GK_AUTHORIZATION_DIR -> authorization/ (subjects.json)
+
+    Testing convenience, not a security feature.
+    """
+    import os
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+REGISTRY_FILE = _resolve_path("GK_AUTHORIZATION_DIR", KERNEL_DIR / "authorization") / "subjects.json"
 
 
 def _default_registry():

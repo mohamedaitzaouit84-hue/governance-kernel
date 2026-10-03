@@ -1,5 +1,5 @@
 """control/kill_switch.py — إيقاف فوري لكل النظام."""
-import sys, json
+import os, sys, json
 from pathlib import Path
 from datetime import datetime, timezone
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "seed"))
@@ -8,7 +8,20 @@ import root
 import append_only_log as audit
 
 KERNEL_DIR = Path(__file__).resolve().parent.parent
-FLAG = KERNEL_DIR / "control" / "kill.flag"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.61): allow env to redirect the control dir.
+
+    GK_CONTROL_DIR -> control/ (kill.flag)
+
+    Testing convenience, not a security feature.
+    """
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+FLAG = _resolve_path("GK_CONTROL_DIR", KERNEL_DIR / "control") / "kill.flag"
 
 
 class KillSwitchActive(Exception):

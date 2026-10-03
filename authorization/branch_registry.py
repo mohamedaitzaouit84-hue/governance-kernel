@@ -8,7 +8,21 @@ import root
 import append_only_log as audit
 
 KERNEL_DIR = Path(__file__).resolve().parent.parent
-REGISTRY = KERNEL_DIR / "branches" / "registry.jsonl"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.61): allow env to redirect the branches dir.
+
+    GK_BRANCHES_DIR -> branches/ (registry.jsonl)
+
+    Testing convenience, not a security feature.
+    """
+    import os
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+REGISTRY = _resolve_path("GK_BRANCHES_DIR", KERNEL_DIR / "branches") / "registry.jsonl"
 
 
 def _now():
