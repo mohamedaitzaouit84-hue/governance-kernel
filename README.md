@@ -1,6 +1,10 @@
 # Governance Kernel
 
 [![Test Suite](https://github.com/mohamedaitzaouit84-hue/governance-kernel/actions/workflows/test.yml/badge.svg)](https://github.com/mohamedaitzaouit84-hue/governance-kernel/actions/workflows/test.yml)
+[![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
+[![V0.5](https://img.shields.io/badge/V0.5-5%2F5-brightgreen)]()
+[![V0.7](https://img.shields.io/badge/V0.7-21%2F21-brightgreen)]()
+[![License: AGPL v3 + Commercial](https://img.shields.io/badge/license-AGPLv3%20%2B%20commercial-blue)](LICENSE)
 
 **A minimal-dependency governance kernel for AI agents.**
 Built on a single Android phone, with zero budget.
@@ -45,9 +49,19 @@ and does NOT claim.
 | V0.6 Multi-Agent | CLOSED (5/5 gates) | 3cdb44f |
 | V0.7 Red Team + Performance + Real Agents + Delegation | CLOSED (19/19 gates) | 791e419 |
 | v0.7.10 -> v0.7.15 | CLOSED (CI + bootstrap + G0.ZZ) | 02884b0 |
+| v0.7.16 -> v0.7.18 | CLOSED (Red Team Round 2; audit signatures + test isolation) | a6c300a (main) |
 
 Full V0.5 report: docs/GATES_v0.5_report.md
 Full V0.7 report: docs/GATES_v0.7_report.md
+
+### Current findings (main, 2026-10-03)
+
+- **J-0.8.50** (audit re-hash attack) — FIXED 2026-10-02
+  commits 4dc3bdf + 7c4d448 + f922c15; gate G0.42 (6/6).
+- **J-0.8.60** (test suite pollutes real audit log) — FIXED 2026-10-03
+  commit 3fd19c0; gate G0.44 (5/5).
+- **10 findings open** (5 CRITICAL, 5 PARTIAL). See docs/JOURNEY.md.
+- **Target v0.7.19**: 0 open findings (~2 weeks).
 
 ---
 
@@ -195,4 +209,4 @@ Built on a phone, at zero cost.
 
 ---
 
-*Last updated: 2026-09-29 — v0.7.15*
+*Last updated: 2026-10-03 — v0.7.18 (main at a6c300a)*
