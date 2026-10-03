@@ -1,12 +1,23 @@
 """audit/integrity.py — التحقق من سلامة السجل."""
-import json, hashlib, sys
+import json, hashlib, os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "seed"))
 import root
 
 KERNEL_DIR = Path(__file__).resolve().parent.parent
-LOG_PATH = KERNEL_DIR / "logs" / "audit.jsonl"
-CKPT_PATH = KERNEL_DIR / "logs" / "checkpoints.jsonl"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.60): allow env to redirect log paths.
+
+    Must match the behavior of audit/append_only_log._resolve_path.
+    """
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+LOG_PATH = _resolve_path("GK_LOG_PATH", KERNEL_DIR / "logs" / "audit.jsonl")
+CKPT_PATH = _resolve_path("GK_CKPT_PATH", KERNEL_DIR / "logs" / "checkpoints.jsonl")
 
 
 def _hash_record(seq, ts, prev_hash, kind, data):

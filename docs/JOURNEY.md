@@ -4504,7 +4504,7 @@ pending HANDOVER.md update in v0.7.18.
 
 **Cost estimate**: 2-3 hours.
 
-**Status**: OPEN (deferred).
+**Status**: FIXED (v0.7.19, Sprint 6 Phase 1, 2026-10-03).
 
 **Scientific note**:
   This finding is about the boundary between the artifact

@@ -1,13 +1,27 @@
 """audit/append_only_log.py — سجل hash-chained قابل للإضافة فقط."""
-import json, hashlib, sys
+import json, hashlib, os, sys
 from pathlib import Path
 from datetime import datetime, timezone
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "seed"))
 import root
 
 KERNEL_DIR = Path(__file__).resolve().parent.parent
-LOG_PATH = KERNEL_DIR / "logs" / "audit.jsonl"
-CKPT_PATH = KERNEL_DIR / "logs" / "checkpoints.jsonl"
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.60): allow env to redirect log paths.
+
+    GK_LOG_PATH  -> audit log
+    GK_CKPT_PATH -> checkpoints file
+
+    Default behavior (env var unset) is unchanged.
+    """
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+LOG_PATH = _resolve_path("GK_LOG_PATH", KERNEL_DIR / "logs" / "audit.jsonl")
+CKPT_PATH = _resolve_path("GK_CKPT_PATH", KERNEL_DIR / "logs" / "checkpoints.jsonl")
 GENESIS_HASH = "0" * 64
 CHECKPOINT_EVERY = 50
 
