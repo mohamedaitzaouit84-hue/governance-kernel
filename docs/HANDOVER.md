@@ -333,6 +333,11 @@ Errors recorded (#21-24, in addition to #1-20):
   22. `git diff` opens pager in Termux -> `git config --global core.pager cat`
   23. Long triple-quoted heredoc patches may truncate -> use string concatenation
   24. Skipping `git add` before `git commit` -> always run `git status --short` first
+  25. Adding a table row that already exists -> `grep -c <row>` before patching a table
+  26. Widening sandbox without widening bootstrap -> every new env var
+      requires bootstrap.py to honor it too. Otherwise bootstrap writes
+      to real paths while tests read from an empty sandbox. Lesson:
+      patch bootstrap BEFORE pointing run_all at the new env vars.
 
 Next session (Sprint 6 Phase 2):
   - kernel/context.py (contextvar-based sandbox())
