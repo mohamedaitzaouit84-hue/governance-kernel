@@ -94,6 +94,10 @@ ALLOWED_EXCEPTIONS = {
     "audit/integrity.py",
     "policy/policy_store.py",
     "authorization/branch_registry.py",
+    # v0.7.19 (J-0.8.61 prep): subject_registry.py gains
+    # _resolve_path for GK_AUTHORIZATION_DIR. Default
+    # behavior unchanged.
+    "authorization/subject_registry.py",
     "control/kill_switch.py",
     "control/resource_governor.py",
     "agents/invariant_checker.py",
