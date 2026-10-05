@@ -16,6 +16,7 @@ This is required because .gitignore excludes:
 See docs/JOURNEY.md J-0.8.1 for context.
 """
 
+import os
 import sys
 import json
 from pathlib import Path
@@ -27,6 +28,27 @@ sys.path.insert(0, str(REPO / "authorization"))
 
 import root
 import append_only_log as audit
+
+
+def _resolve_path(env_key, default):
+    """V0.7.19 (J-0.8.61): allow env to redirect mutable dirs.
+
+    GK_IDENTITY_DIR, GK_CONTROL_DIR, GK_BRANCHES_DIR,
+    GK_AUTHORIZATION_DIR.
+
+    Testing convenience, not a security feature. An attacker
+    who can set env vars can already modify the filesystem.
+    The Position A/B threat model is unchanged.
+    """
+    v = os.environ.get(env_key)
+    return Path(v) if v else default
+
+
+IDENTITY_DIR = _resolve_path("GK_IDENTITY_DIR", REPO / "identity")
+CONTROL_DIR = _resolve_path("GK_CONTROL_DIR", REPO / "control")
+BRANCHES_DIR = _resolve_path("GK_BRANCHES_DIR", REPO / "branches")
+AUTHORIZATION_DIR = _resolve_path(
+    "GK_AUTHORIZATION_DIR", REPO / "authorization")
 
 
 DEFAULT_SUBJECTS = {
@@ -42,6 +64,50 @@ DEFAULT_SUBJECTS = {
 }
 
 
+def _warn_fresh_start_mismatch():
+    """J-0.8.61 (Option C): warn when a fresh owner key meets
+    a non-empty audit log.
+
+    Called from main() when owner_key.priv was regenerated in
+    this run AND logs/audit.jsonl already contains records.
+
+    Consequence: verify_chain() treats existing records as
+    legacy (if a cutoff exists, see J-0.8.50) or fails in
+    strict mode. The warning makes the mismatch explicit and
+    points to the two documented recovery paths.
+    """
+    log = audit.LOG_PATH
+    ckpt = audit.CKPT_PATH
+    n_lines = 0
+    if log.exists():
+        with open(log, "r", encoding="utf-8") as f:
+            n_lines = sum(1 for _ in f)
+    ckpt_state = "present" if ckpt.exists() else "absent"
+
+    print()
+    print("  [WARN] Fresh Start detected:")
+    print("         owner key was regenerated in this run,")
+    print("         but audit state still exists.")
+    print("         - audit log lines: {}".format(n_lines))
+    print("         - checkpoints:     {}".format(ckpt_state))
+    print()
+    print("         Existing records are signed by the")
+    print("         previous key. verify_chain() will treat")
+    print("         them as legacy (with a cutoff) or fail")
+    print("         in strict mode. See J-0.8.50, J-0.8.59.")
+    print()
+    print("         Options:")
+    print("           soft: keep history; run with a cutoff")
+    print("                 (tools/make_audit_cutoff.py)")
+    print("           hard: rm -f logs/audit.jsonl \\")
+    print("                       logs/checkpoints.jsonl \\")
+    print("                       logs/.audit_cutoff.json")
+    print()
+    print("         See docs/HANDOVER.md, section "
+          "'Fresh Start Protocol'.")
+    print()
+
+
 def step_owner_key():
     """Generate owner key if missing. Verify pub/priv consistency.
 
@@ -50,8 +116,8 @@ def step_owner_key():
     git (or otherwise diverged), bootstrap silently left a
     MISMATCH behind, breaking every signature verification.
     """
-    priv = REPO / "identity" / "owner_key.priv"
-    pub = REPO / "identity" / "owner_key.pub"
+    priv = IDENTITY_DIR / "owner_key.priv"
+    pub = IDENTITY_DIR / "owner_key.pub"
 
     if not priv.exists():
         print("  [GEN ] owner_key.priv missing — generating")
@@ -105,7 +171,7 @@ def _rewrite_pub_from_priv(priv_path, pub_path):
 
 def step_root_state():
     """Record root state if missing."""
-    state = REPO / "identity" / "root_state.json"
+    state = IDENTITY_DIR / "root_state.json"
     if state.exists():
         print("  [SKIP] root_state.json already exists")
     else:
@@ -115,7 +181,7 @@ def step_root_state():
 
 def step_audit_log():
     """Create empty audit log if missing."""
-    log = REPO / "logs" / "audit.jsonl"
+    log = audit.LOG_PATH
     if log.exists():
         print("  [SKIP] audit.jsonl already exists")
     else:
@@ -126,7 +192,7 @@ def step_audit_log():
 
 def step_subjects():
     """Ensure subjects.json has all default subjects."""
-    path = REPO / "authorization" / "subjects.json"
+    path = AUTHORIZATION_DIR / "subjects.json"
     if not path.exists():
         print("  [GEN ] subjects.json missing — creating")
         data = {"version": "0.4.1", "subjects": {}}
@@ -241,7 +307,7 @@ def step_reset_kill_switch():
     bootstrap.py clears the flag so a fresh clone starts from
     a clean, deterministic state.
     """
-    flag = REPO / "control" / "kill.flag"
+    flag = CONTROL_DIR / "kill.flag"
     if flag.exists():
         flag.unlink()
         print("  [FIX ] control/kill.flag cleared")
@@ -257,6 +323,15 @@ def step_policy_signature():
     bootstrap.py generates a NEW key.
     We must re-sign so policy_store.load() succeeds.
     """
+    # J-0.8.61 (Error #28): the policy file lives in REPO, but
+    # root.sign() honors GK_IDENTITY_DIR. If identity has been
+    # redirected (sandbox mode), signing the real policy with a
+    # temporary key would break policy_store.load() once the
+    # sandbox is destroyed. Skip in that case.
+    if IDENTITY_DIR != REPO / "identity":
+        print("  [SKIP] policy re-sign skipped (sandbox mode)")
+        return
+
     import hashlib
     policy_dir = REPO / "policy" / "policies"
     policy_file = policy_dir / "default.yaml"
@@ -297,6 +372,8 @@ def main():
     print("Preparing fresh clone...")
     print()
 
+    _priv_existed_before = (IDENTITY_DIR / "owner_key.priv").exists()
+
     step_owner_key()
     step_root_state()
     step_audit_log()
@@ -305,6 +382,12 @@ def main():
     step_register_memory_branch()
     step_reset_kill_switch()
     step_policy_signature()
+
+    # J-0.8.61 (Option C): explicit warning on fresh-start mismatch
+    if not _priv_existed_before:
+        _log = audit.LOG_PATH
+        if _log.exists() and _log.stat().st_size > 0:
+            _warn_fresh_start_mismatch()
 
     print()
     print("=" * 60)
