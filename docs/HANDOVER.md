@@ -344,6 +344,12 @@ Errors recorded (#21-24, in addition to #1-20):
       ALLOWED_EXCEPTIONS. If the file is not listed, add it in the same
       commit. G0.ZZ compares `git diff v0.6-closed HEAD`, so it fails on
       committed changes even when the code works.
+  28. step_policy_signature signs real policy with sandbox key ->
+      root.sign() honors GK_IDENTITY_DIR, but the policy file lives
+      in REPO. In sandbox mode this would re-sign the real
+      default.yaml.sig with a temporary key, breaking
+      policy_store.load() once the sandbox is destroyed. Fix: skip
+      the step when IDENTITY_DIR != REPO / "identity".
 
 Next session (Sprint 6 Phase 2):
   - kernel/context.py (contextvar-based sandbox())

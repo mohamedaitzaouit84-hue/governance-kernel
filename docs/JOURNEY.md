@@ -4584,7 +4584,12 @@ pending HANDOVER.md update in v0.7.18.
 
 **Cost estimate**: 1-2 hours.
 
-**Status**: OPEN (deferred).
+**Status**: PARTIAL FIX (v0.7.19, Sprint 6 Phase 2b, 2026-10-05,
+commit 01f0c10). bootstrap.py now honors 4 env vars, skips
+policy re-sign in sandbox mode, and prints a fresh-start
+warning (Option C). Not yet complete: run_all.py sandbox +
+G0.45 gate + register_agents/memory env vars remain. See
+sub-finding J-0.8.62.
 
 **Scientific note**:
   This finding is meta: it is about the *protocol for
@@ -4594,3 +4599,61 @@ pending HANDOVER.md update in v0.7.18.
   the J-0.8.50 fix surfaced a signature-checking path
   that behaves differently across key generations.
 
+
+---
+
+## J-0.8.62 — register_agents.py and memory/register_branch.py ignore env vars
+
+**Discovered**: 2026-10-05 (during J-0.8.61 sandbox testing)
+**Class**: Test isolation / Path handling
+**Related**: J-0.8.60, J-0.8.61
+
+**Symptom**:
+  When bootstrap.py runs with GK_IDENTITY_DIR redirected
+  (sandbox mode), these steps exit 1:
+
+    [WARN] register_agents.py exited 1
+    [WARN] memory/register_branch.py exited 1
+
+  Both scripts are invoked by bootstrap.py via subprocess
+  and inherit GK_* env vars, but do not honor them. They
+  continue to use hard-coded REPO paths; the file they
+  write (branches/registry.jsonl) lands in the real repo
+  rather than the sandbox.
+
+**Root cause**:
+  register_agents.py and memory/register_branch.py were
+  not part of the J-0.8.61 env-var patch (commit ccefadb).
+  They build paths from Path(__file__).
+
+**Impact**: PARTIAL.
+  - Sandbox test still produced 5/5 and 21/21 after cleanup,
+    but branch registration in the sandbox did not happen.
+  - Full sandbox isolation (Phase 2b) is blocked: run_all.py
+    cannot redirect branches/ until these two scripts honor
+    GK_BRANCHES_DIR.
+  - Does not affect production runs (env vars unset).
+
+**Fix plan** (v0.7.19, Sprint 6 Phase 2c):
+  - Add _resolve_path to agents/register_agents.py and
+    memory/register_branch.py (or to the branch_registry
+    they import).
+  - Both files are under PROTECTED_PREFIXES (agents/
+    entries are in PROTECTED_FILES; memory/ is a protected
+    prefix). ALLOWED_EXCEPTIONS in test_g0ZZ_kernel_untouched.py
+    will need updating (see Error #27).
+  - Add a G0.46 check: after run_all in sandbox mode,
+    branches/registry.jsonl in the real repo is unchanged.
+
+**Cost estimate**: 1 hour (after Phase 2b patches).
+
+**Status**: OPEN (deferred to Sprint 6 Phase 2c).
+
+**Scientific note**:
+  This is the first sub-finding produced not by a red team,
+  but by running a fix in an environment that exercises
+  paths adjacent to the fix. J-0.8.61's patch revealed
+  J-0.8.62. The pattern (every fix surfaces the next
+  boundary) is now the third instance: J-0.8.50 ->
+  J-0.8.59/60/61, J-0.8.60 -> J-0.8.61, J-0.8.61 ->
+  J-0.8.62.
