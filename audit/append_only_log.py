@@ -25,6 +25,20 @@ CKPT_PATH = _resolve_path("GK_CKPT_PATH", KERNEL_DIR / "logs" / "checkpoints.jso
 GENESIS_HASH = "0" * 64
 CHECKPOINT_EVERY = 50
 
+REQUIRED_FIELDS = frozenset(
+    {"seq", "ts", "prev_hash", "kind", "data", "hash"}
+)
+
+
+class CorruptedAuditLog(Exception):
+    """Raised when an audit record is malformed.
+
+    V0.7.19 (J-0.8.62 corrected): fail-closed on malformed
+    content. The alternative (silent self-heal or bare KeyError)
+    hides corruption and produces misleading error messages.
+    """
+    pass
+
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
@@ -64,10 +78,23 @@ def _read_last():
         }
     last = None
     with open(LOG_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                last = json.loads(line)
+        for lineno, raw in enumerate(f, 1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise CorruptedAuditLog(
+                    f"{LOG_PATH}: line {lineno}: invalid JSON: {e}"
+                ) from e
+            missing = REQUIRED_FIELDS - set(rec.keys())
+            if missing:
+                raise CorruptedAuditLog(
+                    f"{LOG_PATH}: line {lineno}: missing "
+                    f"fields: {sorted(missing)}"
+                )
+            last = rec
     return last
 
 

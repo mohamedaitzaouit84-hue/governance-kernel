@@ -350,6 +350,20 @@ Errors recorded (#21-24, in addition to #1-20):
       default.yaml.sig with a temporary key, breaking
       policy_store.load() once the sandbox is destroyed. Fix: skip
       the step when IDENTITY_DIR != REPO / "identity".
+  29. Assuming "## J-" next header exists when patching the last entry ->
+      JOURNEY patches must handle the case where the entry being edited
+      is at EOF. Use: next_idx = s.find("\n## J-", start+len(marker));
+      if next_idx == -1: next_idx = len(s).
+  30. assert s.count("J-X") == 0 after Patch A inserted "J-X" -> checks
+      the modified string. Fix: check a unique anchor ("## J-X —") before
+      any modification, or verify the ORIGINAL string.
+  31. Misdiagnosis without reproduction -> the original J-0.8.62
+      (commit ff2ed27) blamed register_agents.py for not honoring env
+      vars, based on one [WARN] line from bootstrap.py. Direct execution
+      of register_agents.py in the same env proved it works. Lesson: a
+      finding must be reproduced in the smallest possible unit (one
+      script, one call) with the exact exception captured, before being
+      recorded. A downstream symptom is not the root cause.
 
 Next session (Sprint 6 Phase 2):
   - kernel/context.py (contextvar-based sandbox())

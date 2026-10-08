@@ -29,6 +29,7 @@ TESTS = [
     ("G0.41 Empty Audit Self-Heal", "test_g041_empty_audit_self_heal.py"),
     ("G0.42 Audit Signature",       "test_g042_audit_signature.py"),
     ("G0.44 Real Log Untouched",    "test_g044_real_log_untouched.py"),
+    ("G0.45 Corrupted Audit",       "test_g045_corrupted_audit.py"),
 ]
 
 

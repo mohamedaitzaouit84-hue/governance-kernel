@@ -4602,58 +4602,94 @@ sub-finding J-0.8.62.
 
 ---
 
-## J-0.8.62 — register_agents.py and memory/register_branch.py ignore env vars
+## J-0.8.62 — audit.append() crashes on malformed last record
 
-**Discovered**: 2026-10-05 (during J-0.8.61 sandbox testing)
-**Class**: Test isolation / Path handling
-**Related**: J-0.8.60, J-0.8.61
+**Corrected**: 2026-10-06 (supersedes the entry in commit ff2ed27)
+**Class**: Audit integrity / Fail-closed
+**Related**: J-0.8.61, J-0.8.50, J-0.8.7
+
+### Correction note
+
+The original J-0.8.62 entry (commit ff2ed27, 2026-10-05) was
+titled "register_agents.py and memory/register_branch.py
+ignore env vars" and claimed both scripts failed to honor
+GK_* env vars in sandbox mode. That diagnosis was wrong.
+
+Direct reproduction in an isolated sandbox (2026-10-06)
+showed both scripts honor the env vars correctly:
+branch_registry, which they import, was patched in commit
+ccefadb. The original failure was a KeyError inside
+audit.append(), triggered by a pre-seeded malformed audit
+log (echo '{"seq":0}' > audit.jsonl, missing "hash").
+Because the KeyError propagated up through
+branch_registry.register() into register_agents.py,
+bootstrap.py printed "[WARN] register_agents.py exited 1" —
+a downstream symptom, not the root cause.
+
+This correction is recorded in HANDOVER.md as Error #31
+(misdiagnosis without reproduction).
+
+### Actual finding
+
+**Reproduction** (minimal, 2026-10-06):
+    mkdir -p ~/.gk_dbg && cd ~/.gk_dbg
+    echo '{"seq":0}' > audit.jsonl
+    python3 -c "
+    import sys, pathlib
+    sys.path.insert(0, '<REPO>/audit')
+    import append_only_log as aol
+    aol.LOG_PATH = pathlib.Path('audit.jsonl')
+    aol.append('k', {})
+    "
+
+  Result:
+    File "audit/append_only_log.py", line 110, in append
+      prev_hash = last["hash"]
+    KeyError: 'hash'
 
 **Symptom**:
-  When bootstrap.py runs with GK_IDENTITY_DIR redirected
-  (sandbox mode), these steps exit 1:
+  audit.append() reads the last record via _read_last(). That
+  function returns whatever the last line of the log contains,
+  without validating required fields. append() then accesses:
 
-    [WARN] register_agents.py exited 1
-    [WARN] memory/register_branch.py exited 1
+    prev_hash = last["hash"]   # line 110
 
-  Both scripts are invoked by bootstrap.py via subprocess
-  and inherit GK_* env vars, but do not honor them. They
-  continue to use hard-coded REPO paths; the file they
-  write (branches/registry.jsonl) lands in the real repo
-  rather than the sandbox.
+  If the last record is missing "hash" (or is malformed JSON),
+  this raises KeyError (or json.JSONDecodeError). The exception
+  is not caught; it propagates to the caller.
 
 **Root cause**:
-  register_agents.py and memory/register_branch.py were
-  not part of the J-0.8.61 env-var patch (commit ccefadb).
-  They build paths from Path(__file__).
+  _read_last() is a reader, not a validator. It trusts the
+  content of the file. J-0.8.7 introduced self-healing for the
+  EMPTY case (returns synthetic genesis) but did not address
+  the MALFORMED case.
 
 **Impact**: PARTIAL.
-  - Sandbox test still produced 5/5 and 21/21 after cleanup,
-    but branch registration in the sandbox did not happen.
-  - Full sandbox isolation (Phase 2b) is blocked: run_all.py
-    cannot redirect branches/ until these two scripts honor
-    GK_BRANCHES_DIR.
-  - Does not affect production runs (env vars unset).
+  - No kernel-loop impact (V0.5, V0.7 pass with well-formed
+    logs).
+  - Any caller of audit.append() can be crashed by a corrupted
+    or truncated last line.
+  - The error message (KeyError: 'hash') does not identify the
+    file or the line, making debugging harder.
 
-**Fix plan** (v0.7.19, Sprint 6 Phase 2c):
-  - Add _resolve_path to agents/register_agents.py and
-    memory/register_branch.py (or to the branch_registry
-    they import).
-  - Both files are under PROTECTED_PREFIXES (agents/
-    entries are in PROTECTED_FILES; memory/ is a protected
-    prefix). ALLOWED_EXCEPTIONS in test_g0ZZ_kernel_untouched.py
-    will need updating (see Error #27).
-  - Add a G0.46 check: after run_all in sandbox mode,
-    branches/registry.jsonl in the real repo is unchanged.
+**Fix plan** (fail-closed, per project philosophy):
+  - Add class CorruptedAuditLog(Exception).
+  - _read_last() validates each line for REQUIRED_FIELDS
+    {"seq", "ts", "prev_hash", "kind", "data", "hash"}.
+  - On missing field or JSON error -> raise CorruptedAuditLog
+    with the line number and the missing field(s).
+  - No silent self-heal of malformed content. The empty case
+    (unchanged) still returns a synthetic genesis.
 
-**Cost estimate**: 1 hour (after Phase 2b patches).
+**Cost estimate**: 30 minutes.
 
-**Status**: OPEN (deferred to Sprint 6 Phase 2c).
+**Status**: FIXED (v0.7.19, Sprint 6 Phase 2c, 2026-10-08).
 
 **Scientific note**:
-  This is the first sub-finding produced not by a red team,
-  but by running a fix in an environment that exercises
-  paths adjacent to the fix. J-0.8.61's patch revealed
-  J-0.8.62. The pattern (every fix surfaces the next
-  boundary) is now the third instance: J-0.8.50 ->
-  J-0.8.59/60/61, J-0.8.60 -> J-0.8.61, J-0.8.61 ->
-  J-0.8.62.
+  This is the first finding in the project produced by
+  reproduction of an earlier (wrong) finding. The workflow
+  lesson: the first visible symptom of a failure may be
+  downstream of the actual cause. File-system errors in a
+  sandbox can look like env-var misbehavior unless the
+  failing unit is executed in isolation. Error #31 records
+  this.
