@@ -39,9 +39,13 @@ No claim of novelty is made without explicit reference here.
 
 **Possible novelty** (to be scrutinized):
 
-1. **Zero-dependency governance kernel**
+1. **Minimal-dependency governance kernel**
    - OPA/Cedar require runtimes (Go, Rust).
-   - This project uses Python stdlib only.
+   - This project uses Python 3.11+ with two dependencies
+     only: cryptography (Ed25519) and pyyaml (policy parsing).
+   - Earlier drafts claimed 'stdlib only'. This was corrected
+     in J-0.8.8 and J-0.8.9 (2026-09-23). See docs/OPENING.md
+     section 6.
 
 2. **Freeze-before-code discipline**
    - Most projects code first, document later.
